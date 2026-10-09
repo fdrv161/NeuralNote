@@ -201,11 +201,13 @@ void VisualizationPanel::_layOutTranscribeButton()
     const auto instrument_count =
         state == AudioLoaded ? static_cast<int>(InstrumentSelection::get(mProcessor->getValueTree()).size()) : 0;
 
-    mTranscribeButton.setLabel(instrument_count == 0 ? juce::String("Transcribe")
-                               : instrument_count == 1
-                                   ? juce::String("Transcribe 1 instrument")
-                                   : "Transcribe " + juce::String(instrument_count) + " instruments",
-                               nn::fonts::buttonLabel());
+    const juce::String transcribe_label = instrument_count == 0 ? juce::String("Transcribe")
+                                          : instrument_count == 1
+                                              ? juce::String("Transcribe 1 instrument")
+                                              : "Transcribe " + juce::String(instrument_count) + " instruments";
+
+    mTranscribeButton.setLabel(transcribe_label, nn::fonts::buttonLabel());
+    mTranscribeButton.setTitle(transcribe_label);
 
     mTranscribeButton.setBounds(roll.withSizeKeepingCentre(mTranscribeButton.getIdealWidth(), nn::metrics::ctaHeight));
 }

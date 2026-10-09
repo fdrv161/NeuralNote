@@ -119,6 +119,7 @@ ModelDownloadPanel::ModelDownloadPanel(NeuralNoteAudioProcessor& inProcessor)
             nn::icons::crossStroked, NnFlatButton::IconStyle::stroked, nn::metrics::cancelGlyphSize);
         row->cancelButton.setCornerRadius(4.0f);
         row->cancelButton.setTooltip(NeuralNoteTooltips::stop_model_download);
+        row->cancelButton.setTitle("Stop downloading " + juce::String(modelSizeToDisplayName(size)));
         row->cancelButton.onClick = [this, size] { mProcessor.getModelDownloader().cancel(size); };
         addChildComponent(row->cancelButton);
 
@@ -128,6 +129,7 @@ ModelDownloadPanel::ModelDownloadPanel(NeuralNoteAudioProcessor& inProcessor)
     mCloseButton.setIcon(nn::icons::crossStroked, NnFlatButton::IconStyle::stroked, nn::metrics::cancelGlyphSize);
     mCloseButton.setCornerRadius(4.0f);
     mCloseButton.setTooltip("Close");
+    mCloseButton.setTitle("Close model panel");
     mCloseButton.onClick = [this] {
         if (onCloseRequested != nullptr) {
             onCloseRequested();
@@ -137,6 +139,7 @@ ModelDownloadPanel::ModelDownloadPanel(NeuralNoteAudioProcessor& inProcessor)
 
     mOpenFolderButton.setIcon(nn::icons::folderStroked, NnFlatButton::IconStyle::stroked, ICON_SIZE);
     mOpenFolderButton.setLabel("Open models folder", nn::fonts::buttonLabel());
+    mOpenFolderButton.setTitle("Open models folder");
     mOpenFolderButton.setPadding(10, 12, 7);
     mOpenFolderButton.setCornerRadius(static_cast<float>(nn::metrics::controlCorner));
     mOpenFolderButton.setColour(NnFlatButton::backgroundColourId, nn::colours::popupRowHover);
@@ -219,6 +222,11 @@ bool ModelDownloadPanel::_updateRows(bool inForce)
                                      : status.downloadedBytes > 0                   ? "Resume"
                                                                                     : "Download",
                                      nn::fonts::buttonLabel());
+        // The label alone does not say which model the button is for.
+        row->downloadButton.setTitle((status.phase == ModelDownloader::Phase::Failed ? "Retry "
+                                      : status.downloadedBytes > 0                   ? "Resume "
+                                                                                     : "Download ")
+                                     + juce::String(modelSizeToDisplayName(row->modelSize)));
         row->downloadButton.setVisible(!row->isInstalled && !status.isBusy());
         row->cancelButton.setVisible(!row->isInstalled && status.phase == ModelDownloader::Phase::Downloading);
     }

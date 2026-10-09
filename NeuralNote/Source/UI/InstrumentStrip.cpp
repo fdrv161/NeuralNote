@@ -51,6 +51,8 @@ InstrumentStrip::InstrumentStrip(InstrumentMixer& inMixer, int inProgram)
     mFader.setRange(MIN_INF_GAIN_DB, MAX_GAIN_DB, 0.1);
     mFader.setDoubleClickReturnValue(true, 0.0);
     mFader.setTooltip("Level for this instrument");
+    // Only read out by screen readers: the fader has no text box.
+    mFader.setTextValueSuffix(" dB");
     // Repainted here rather than off a mixer change message: gain does not broadcast, and this
     // strip's dB readout is the only thing in the window that draws it.
     mFader.onValueChange = [this] {
@@ -74,6 +76,11 @@ void InstrumentStrip::setEntry(const InstrumentEntry& inEntry)
     }
 
     mEntry = inEntry;
+
+    // A screen reader hears each control on its own, so each one names its instrument.
+    mMuteButton.setTitle("Mute " + mEntry.name);
+    mSoloButton.setTitle("Solo " + mEntry.name);
+    mFader.setTitle(mEntry.name + " level");
 
     _updateAppearance();
     repaint();

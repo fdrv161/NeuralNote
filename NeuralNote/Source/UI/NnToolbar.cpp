@@ -45,6 +45,7 @@ NnToolbar::NnToolbar(NeuralNoteAudioProcessor& inProcessor)
     mTempoEditor = std::make_unique<NumericTextEditor<double>>(
         &mProcessor, NnId::ExportTempoId, 6, 120.0, juce::Justification::centredLeft, tempo_is_valid, correct_tempo);
     mTempoEditor->setTooltip(NeuralNoteTooltips::export_tempo);
+    mTempoEditor->setTitle("Export tempo");
 
     // TextEditor only centres vertically when the line fits below its top indent, so the indent goes
     // and the editor takes the pill's full height.
@@ -58,6 +59,7 @@ NnToolbar::NnToolbar(NeuralNoteAudioProcessor& inProcessor)
     mExportButton.setColour(NnFlatButton::iconColourId, nn::colours::textIconSoft);
     mExportButton.setColour(NnFlatButton::textColourId, nn::colours::textButton);
     mExportButton.setTooltip("Write the transcribed MIDI to a file");
+    mExportButton.setTitle("Export MIDI out");
     mExportButton.onClick = [this] { _exportMidiFile(); };
     addAndMakeVisible(mExportButton);
 
@@ -67,6 +69,7 @@ NnToolbar::NnToolbar(NeuralNoteAudioProcessor& inProcessor)
     mClearButton.setColour(NnFlatButton::backgroundColourId, nn::colours::bgControlAlt);
     mClearButton.setColour(NnFlatButton::iconColourId, nn::colours::textIconSoft);
     mClearButton.setTooltip(NeuralNoteTooltips::clear);
+    mClearButton.setTitle("Clear");
     mClearButton.onClick = [this] { _clearOneStep(); };
     addAndMakeVisible(mClearButton);
 
