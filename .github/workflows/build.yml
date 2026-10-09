@@ -5,6 +5,11 @@ on:
     branches: [a11y]
   workflow_dispatch:
 
+env:
+  # Pinned so builds are reproducible. The same SDK version ggml's sibling project llama.cpp
+  # builds its Windows Vulkan backend with.
+  VULKAN_VERSION: 1.4.313.2
+
 jobs:
   build-windows:
     runs-on: windows-2022
@@ -30,26 +35,36 @@ jobs:
           path: NeuralNote/Assets/SoundFont/NeuralNote_GM.sf3
           key: soundfont-${{ hashFiles('Tools/fetch_soundfont.py', 'Tools/make_soundfont.py') }}
 
+      # GPU support: the ggml Vulkan backend needs the SDK's headers and glslc at build time.
+      # At run time it uses the vulkan-1.dll that ships with the graphics driver.
+      - name: Install Vulkan SDK
+        shell: pwsh
+        run: |
+          $installer = "$env:RUNNER_TEMP\VulkanSDK-Installer.exe"
+          curl.exe -L -o $installer "https://sdk.lunarg.com/sdk/download/$env:VULKAN_VERSION/windows/vulkansdk-windows-X64-$env:VULKAN_VERSION.exe"
+          & $installer --accept-licenses --default-answer --confirm-command install
+          Add-Content $env:GITHUB_ENV "VULKAN_SDK=C:\VulkanSDK\$env:VULKAN_VERSION"
+          Add-Content $env:GITHUB_PATH "C:\VulkanSDK\$env:VULKAN_VERSION\bin"
+
+      # ggml builds its shader generator as a nested project that only sees the environment,
+      # so it needs a Visual Studio developer prompt (cl on PATH).
+      - name: Set up MSVC developer environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
       # The README says only Clang has been tested, so build with clang-cl
-      # (ships with Visual Studio 2022 on the runner). CPU-only build: no Vulkan SDK.
+      # (ships with Visual Studio 2022 on the runner).
       # LTO is off to keep the build simpler and faster for testing.
       - name: Configure
         run: >
           cmake -B build -G "Visual Studio 17 2022" -A x64 -T ClangCL
           -DLTO=OFF
-          -DMUSCRIPTOR_VULKAN=OFF
+          -DMUSCRIPTOR_VULKAN=ON
           -DPython3_EXECUTABLE="${{ env.pythonLocation }}\python.exe"
 
-      - name: Build Standalone and VST3
-        run: cmake --build build --config Release --target NeuralNote_Standalone NeuralNote_VST3 --parallel
-
-      - name: Upload Standalone
-        uses: actions/upload-artifact@v4
-        with:
-          name: NeuralNote-Standalone-Windows-x64
-          path: build/NeuralNote_artefacts/Release/Standalone/
-          retention-days: 7
-          if-no-files-found: error
+      - name: Build VST3
+        run: cmake --build build --config Release --target NeuralNote_VST3 --parallel
 
       - name: Upload VST3
         uses: actions/upload-artifact@v4
