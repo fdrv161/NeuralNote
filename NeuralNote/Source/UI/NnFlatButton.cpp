@@ -4,6 +4,7 @@
 
 #include "NnFlatButton.h"
 
+#include "NnAccessibility.h"
 #include "NnIcons.h"
 
 NnFlatButton::NnFlatButton(const juce::String& inName)
@@ -83,6 +84,18 @@ void NnFlatButton::enablementChanged()
 {
     setMouseCursor(isEnabled() ? juce::MouseCursor::PointingHandCursor : juce::MouseCursor::NormalCursor);
     repaint();
+}
+
+void NnFlatButton::buttonStateChanged()
+{
+    juce::Button::buttonStateChanged();
+
+    // Also called on hover and press; only a change of the toggle state is passed on, so NVDA hears
+    // a toggle made with Space or Return, or by the transport, while the button has the focus.
+    if (getToggleState() != mAnnouncedToggleState) {
+        mAnnouncedToggleState = getToggleState();
+        nn::a11y::notifyToggleStateChanged(*this);
+    }
 }
 
 void NnFlatButton::paintButton(juce::Graphics& g, bool inIsHighlighted, bool inIsDown)
