@@ -30,9 +30,14 @@ public:
 
     void paint(juce::Graphics& g) override;
 
+    std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override;
+
 private:
     /** Polls the engine's progress; only repaints when the phase, the percentage or the pulse moved. */
     void _onVBlankCallback();
+
+    /** The phase and percentage in words, as a screen reader reads the bar. */
+    juce::String _getProgressText() const;
 
     NeuralNoteAudioProcessor& mProcessor;
 
