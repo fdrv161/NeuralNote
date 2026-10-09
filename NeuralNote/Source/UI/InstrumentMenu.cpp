@@ -4,6 +4,8 @@
 
 #include "InstrumentMenu.h"
 
+#include <limits>
+
 #include "InstrumentInfo.h"
 #include "InstrumentSelection.h"
 #include "NnFonts.h"
@@ -43,7 +45,23 @@ InstrumentMenu::InstrumentMenu(NeuralNoteAudioProcessor& inProcessor)
 
     addAndMakeVisible(mViewport);
 
+    // The rows take the arrow keys themselves, so the viewport is not a Tab stop of its own.
+    mViewport.setWantsKeyboardFocus(false);
+
+    mRowList.createItems();
+
     setWantsKeyboardFocus(true);
+
+    // Tab stays inside the open menu rather than walking out to the controls under the scrim.
+    setFocusContainerType(FocusContainerType::keyboardFocusContainer);
+
+    setTitle("Add instrument");
+    setDescription("Tick to include in transcription");
+}
+
+std::unique_ptr<juce::AccessibilityHandler> InstrumentMenu::createAccessibilityHandler()
+{
+    return std::make_unique<juce::AccessibilityHandler>(*this, juce::AccessibilityRole::group);
 }
 
 void InstrumentMenu::setPanelAnchor(juce::Point<int> inTopRight)
@@ -139,6 +157,13 @@ bool InstrumentMenu::keyPressed(const juce::KeyPress& inKey)
         return true;
     }
 
+    // The panel itself has the focus after a click on its header or the scrim; the arrows take
+    // it back into the list.
+    if (inKey == juce::KeyPress::upKey || inKey == juce::KeyPress::downKey) {
+        mRowList.focusCurrentRow(false);
+        return true;
+    }
+
     return false;
 }
 
@@ -146,8 +171,14 @@ void InstrumentMenu::visibilityChanged()
 {
     if (isVisible()) {
         // Taken so Escape reaches this rather than the main view's transport shortcuts. The main
-        // view takes it back when the menu closes.
-        grabKeyboardFocus();
+        // view takes it back when the menu closes. Given to a row, which is inside this, so a
+        // screen reader lands on something it can read and tick.
+        mRowList.syncTicks();
+        mRowList.focusCurrentRow(true);
+
+        if (!hasKeyboardFocus(true)) {
+            grabKeyboardFocus();
+        }
     }
 }
 
@@ -155,6 +186,202 @@ InstrumentMenu::RowList::RowList(NeuralNoteAudioProcessor& inProcessor, const st
     : mProcessor(inProcessor)
     , mEntries(inEntries)
 {
+    setTitle("Instruments");
+
+    // A click ticks the row under it without moving the focus, which stays in the menu either way.
+    setMouseClickGrabsKeyboardFocus(false);
+}
+
+InstrumentMenu::RowList::~RowList() = default;
+
+void InstrumentMenu::RowList::createItems()
+{
+    for (int i = 0; i < static_cast<int>(mEntries.size()); i++) {
+        auto item = std::make_unique<RowItem>(*this, i, mEntries[static_cast<std::size_t>(i)].name);
+        item->setWantsKeyboardFocus(i == mFocusedRow);
+        addAndMakeVisible(*item);
+        mItems.push_back(std::move(item));
+    }
+
+    syncTicks();
+}
+
+std::unique_ptr<juce::AccessibilityHandler> InstrumentMenu::RowList::createAccessibilityHandler()
+{
+    return std::make_unique<juce::AccessibilityHandler>(*this, juce::AccessibilityRole::list);
+}
+
+void InstrumentMenu::RowList::resized()
+{
+    for (int i = 0; i < static_cast<int>(mItems.size()); i++) {
+        mItems[static_cast<std::size_t>(i)]->setBounds(
+            0, nn::metrics::menuListPadY + i * nn::metrics::menuRowHeight, getWidth(), nn::metrics::menuRowHeight);
+    }
+}
+
+bool InstrumentMenu::RowList::_isTicked(const Entry& inEntry, const std::vector<msl::InstrumentGroup>& inSelected)
+{
+    return inEntry.group.has_value() ? std::find(inSelected.begin(), inSelected.end(), *inEntry.group)
+                                           != inSelected.end()
+                                     : inSelected.empty();
+}
+
+void InstrumentMenu::RowList::syncTicks()
+{
+    const std::vector<msl::InstrumentGroup> selected = InstrumentSelection::get(mProcessor.getValueTree());
+
+    for (std::size_t i = 0; i < mItems.size(); i++) {
+        mItems[i]->setToggleState(_isTicked(mEntries[i], selected), juce::dontSendNotification);
+    }
+}
+
+void InstrumentMenu::RowList::toggleRow(int inRow)
+{
+    if (!juce::isPositiveAndBelow(inRow, static_cast<int>(mEntries.size()))) {
+        return;
+    }
+
+    juce::ValueTree& state = mProcessor.getValueTree();
+    const std::optional<msl::InstrumentGroup> group = mEntries[static_cast<std::size_t>(inRow)].group;
+
+    if (group.has_value()) {
+        InstrumentSelection::toggle(state, *group);
+    } else {
+        InstrumentSelection::clear(state);
+    }
+
+    syncTicks();
+
+    // The menu stays open, so the row that was just ticked has to redraw itself here.
+    repaint();
+}
+
+void InstrumentMenu::RowList::focusRow(int inRow)
+{
+    if (mItems.empty()) {
+        return;
+    }
+
+    const int row = juce::jlimit(0, static_cast<int>(mItems.size()) - 1, inRow);
+
+    mItems[static_cast<std::size_t>(mFocusedRow)]->setWantsKeyboardFocus(false);
+    mFocusedRow = row;
+
+    RowItem& item = *mItems[static_cast<std::size_t>(row)];
+    item.setWantsKeyboardFocus(true);
+
+    _scrollRowIntoView(row);
+
+    if (!item.hasKeyboardFocus(false)) {
+        item.grabKeyboardFocus();
+    }
+
+    // The hover highlight doubles as the keyboard cursor, so the focused row can be seen too.
+    if (mHoveredRow != row) {
+        mHoveredRow = row;
+        repaint();
+    }
+}
+
+void InstrumentMenu::RowList::focusCurrentRow(bool inIsOpening)
+{
+    int row = mFocusedRow;
+
+    if (inIsOpening) {
+        const std::vector<msl::InstrumentGroup> selected = InstrumentSelection::get(mProcessor.getValueTree());
+        row = 0;
+
+        for (int i = 0; i < static_cast<int>(mEntries.size()); i++) {
+            if (_isTicked(mEntries[static_cast<std::size_t>(i)], selected)) {
+                row = i;
+                break;
+            }
+        }
+    }
+
+    focusRow(row);
+}
+
+void InstrumentMenu::RowList::_scrollRowIntoView(int inRow)
+{
+    auto* viewport = findParentComponentOfClass<juce::Viewport>();
+
+    if (viewport == nullptr) {
+        return;
+    }
+
+    const auto row_bounds = mItems[static_cast<std::size_t>(inRow)]->getBounds();
+    const int view_top = viewport->getViewPositionY();
+    const int view_height = viewport->getViewHeight();
+
+    if (row_bounds.getY() < view_top) {
+        viewport->setViewPosition(0, row_bounds.getY());
+    } else if (row_bounds.getBottom() > view_top + view_height) {
+        viewport->setViewPosition(0, row_bounds.getBottom() - view_height);
+    }
+}
+
+InstrumentMenu::RowItem::RowItem(RowList& inOwner, int inRow, const juce::String& inName)
+    : mOwner(inOwner)
+    , mRow(inRow)
+{
+    setTitle(inName);
+
+    // Its state follows the stored selection, which toggleRow writes and syncTicks reads back:
+    // a click does not flip it on its own.
+    setToggleable(true);
+    setClickingTogglesState(false);
+    onClick = [this] { mOwner.toggleRow(mRow); };
+
+    // The rows under it are clicked through the list, as before.
+    setInterceptsMouseClicks(false, false);
+    setMouseClickGrabsKeyboardFocus(false);
+}
+
+void InstrumentMenu::RowItem::paintButton(juce::Graphics& g, bool inIsHighlighted, bool inIsDown)
+{
+    // The list paints the row.
+    juce::ignoreUnused(g, inIsHighlighted, inIsDown);
+}
+
+bool InstrumentMenu::RowItem::keyPressed(const juce::KeyPress& inKey)
+{
+    if (inKey == juce::KeyPress::upKey) {
+        mOwner.focusRow(mRow - 1);
+        return true;
+    }
+
+    if (inKey == juce::KeyPress::downKey) {
+        mOwner.focusRow(mRow + 1);
+        return true;
+    }
+
+    if (inKey == juce::KeyPress::homeKey || inKey == juce::KeyPress::pageUpKey) {
+        mOwner.focusRow(0);
+        return true;
+    }
+
+    if (inKey == juce::KeyPress::endKey || inKey == juce::KeyPress::pageDownKey) {
+        mOwner.focusRow(std::numeric_limits<int>::max());
+        return true;
+    }
+
+    // Space ticks, as in any check box list, rather than reaching the main view's play / pause.
+    if (inKey == juce::KeyPress::spaceKey) {
+        triggerClick();
+        return true;
+    }
+
+    // Return ticks too; Escape goes on up to the menu, which closes.
+    return juce::ToggleButton::keyPressed(inKey);
+}
+
+void InstrumentMenu::RowItem::focusGained(FocusChangeType inCause)
+{
+    juce::ignoreUnused(inCause);
+
+    // Focus can also arrive from a screen reader moving it directly.
+    mOwner.focusRow(mRow);
 }
 
 int InstrumentMenu::RowList::getIdealHeight() const
@@ -184,9 +411,7 @@ void InstrumentMenu::RowList::paint(juce::Graphics& g)
     for (int i = 0; i < static_cast<int>(mEntries.size()); i++) {
         const Entry& entry = mEntries[static_cast<std::size_t>(i)];
 
-        const bool ticked = entry.group.has_value()
-                                ? std::find(selected.begin(), selected.end(), *entry.group) != selected.end()
-                                : selected.empty();
+        const bool ticked = _isTicked(entry, selected);
 
         auto row = juce::Rectangle<int>(0, y, getWidth(), nn::metrics::menuRowHeight);
         y += nn::metrics::menuRowHeight;
@@ -228,21 +453,5 @@ void InstrumentMenu::RowList::mouseExit(const juce::MouseEvent& inEvent)
 
 void InstrumentMenu::RowList::mouseDown(const juce::MouseEvent& inEvent)
 {
-    const int row = _rowAt(inEvent.getPosition());
-
-    if (row < 0) {
-        return;
-    }
-
-    juce::ValueTree& state = mProcessor.getValueTree();
-    const std::optional<msl::InstrumentGroup> group = mEntries[static_cast<std::size_t>(row)].group;
-
-    if (group.has_value()) {
-        InstrumentSelection::toggle(state, *group);
-    } else {
-        InstrumentSelection::clear(state);
-    }
-
-    // The menu stays open, so the row that was just ticked has to redraw itself here.
-    repaint();
+    toggleRow(_rowAt(inEvent.getPosition()));
 }

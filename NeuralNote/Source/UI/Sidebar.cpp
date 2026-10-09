@@ -184,6 +184,16 @@ void Sidebar::setMenuOpen(bool inIsOpen)
     mAddButton.setToggleState(inIsOpen, juce::dontSendNotification);
 }
 
+bool Sidebar::focusAddButton()
+{
+    if (!mAddButton.isShowing()) {
+        return false;
+    }
+
+    mAddButton.grabKeyboardFocus();
+    return true;
+}
+
 void Sidebar::_onVBlankCallback(double inTimestampSeconds)
 {
     // Clamped so a stalled frame does not drop the release by a whole range at once.

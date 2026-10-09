@@ -119,8 +119,12 @@ void NeuralNoteMainView::_setInstrumentMenuOpen(bool inIsOpen)
     }
 
     if (!inIsOpen) {
-        // The transport shortcuts live here, and the menu took the focus to hear Escape.
-        grabKeyboardFocus();
+        // The menu took the focus to hear Escape. It goes back to the "+" that opened the menu, so
+        // a keyboard or screen reader user is where they were; the transport shortcuts still reach
+        // this from there. Here when the "+" has gone.
+        if (!mSidebar.focusAddButton()) {
+            grabKeyboardFocus();
+        }
     }
 }
 

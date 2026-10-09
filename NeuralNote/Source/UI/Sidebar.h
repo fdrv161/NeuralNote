@@ -53,6 +53,9 @@ public:
     /** Lights the "+" while its menu is on screen. */
     void setMenuOpen(bool inIsOpen);
 
+    /** Gives the keyboard focus back to the "+". @return false when the "+" is not on screen. */
+    bool focusAddButton();
+
 private:
     /** The scrollable list itself. Sized to its strips so the viewport can scroll it. */
     class StripList : public juce::Component
