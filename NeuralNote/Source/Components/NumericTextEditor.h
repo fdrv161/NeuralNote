@@ -87,6 +87,16 @@ public:
         Desktop::getInstance().addGlobalMouseListener(this);
     }
 
+    void enablementChanged() override
+    {
+        TextEditor::enablementChanged();
+
+        // JUCE picks the screen reader role once, when the handler is created: static text while
+        // disabled, edit field while enabled. Rebuild it so a field that starts disabled is not
+        // left as static text after it is enabled.
+        invalidateAccessibilityHandler();
+    }
+
     static T strToNumber(const String& text)
     {
         if constexpr (std::is_same_v<T, int>) {
