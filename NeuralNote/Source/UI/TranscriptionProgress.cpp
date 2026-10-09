@@ -62,6 +62,58 @@ TranscriptionProgress::TranscriptionProgress(NeuralNoteAudioProcessor& inProcess
     };
 
     addAndMakeVisible(mCancelButton);
+
+    // A Tab stop while a transcription runs, so a screen reader can read how far it has got.
+    setTitle("Transcription progress");
+    setWantsKeyboardFocus(true);
+}
+
+std::unique_ptr<juce::AccessibilityHandler> TranscriptionProgress::createAccessibilityHandler()
+{
+    class ValueInterface final : public juce::AccessibilityValueInterface
+    {
+    public:
+        explicit ValueInterface(TranscriptionProgress& inOwner)
+            : mOwner(inOwner)
+        {
+        }
+
+        bool isReadOnly() const override { return true; }
+
+        double getCurrentValue() const override { return static_cast<double>(juce::jmax(0, mOwner.mDisplayedPercent)); }
+
+        void setValue(double) override {}
+
+        juce::String getCurrentValueAsString() const override { return mOwner._getProgressText(); }
+
+        void setValueAsString(const juce::String&) override {}
+
+        juce::AccessibleValueRange getRange() const override { return {{0.0, 100.0}, 1.0}; }
+
+    private:
+        TranscriptionProgress& mOwner;
+    };
+
+    return std::make_unique<juce::AccessibilityHandler>(
+        *this,
+        juce::AccessibilityRole::progressBar,
+        juce::AccessibilityActions {},
+        juce::AccessibilityHandler::Interfaces {std::make_unique<ValueInterface>(*this)});
+}
+
+juce::String TranscriptionProgress::_getProgressText() const
+{
+    juce::String text = mDisplayedPhase == MuscriptorEngine::Phase::LoadingModel ? "Loading model" : "Transcribing";
+
+    if (mDisplayedPercent >= 0) {
+        text << ", " << mDisplayedPercent << "%";
+    }
+
+    if (mIsCancelling) {
+        text << ", cancelling";
+    }
+
+    return text;
 }
 
 int TranscriptionProgress::getIdealWidth()
@@ -148,9 +200,19 @@ void TranscriptionProgress::_onVBlankCallback()
         return;
     }
 
+    // The pulse alone is only animation; anything else is news for a screen reader.
+    const bool reading_changed =
+        progress.phase != mDisplayedPhase || percent != mDisplayedPercent || is_cancelling != mIsCancelling;
+
     mIsCancelling = is_cancelling;
     mDisplayedPhase = progress.phase;
     mDisplayedPercent = percent;
     mPulse = pulse;
     repaint();
+
+    if (reading_changed) {
+        if (auto* handler = getAccessibilityHandler()) {
+            handler->notifyAccessibilityEvent(juce::AccessibilityEvent::valueChanged);
+        }
+    }
 }
