@@ -5,6 +5,7 @@
 #include "ModelDownloadPanel.h"
 
 #include "NeuralNoteTooltips.h"
+#include "NnAccessibility.h"
 #include "NNFileUtils.h"
 #include "NnFonts.h"
 #include "NnGlobalSettings.h"
@@ -88,8 +89,9 @@ juce::Rectangle<int> contentOf(juce::Rectangle<int> inRowBounds)
 }
 } // namespace
 
-ModelDownloadPanel::Row::Row(ModelSize inModelSize)
+ModelDownloadPanel::Row::Row(ModelSize inModelSize, ModelDownloadPanel& inOwner, int inRow)
     : modelSize(inModelSize)
+    , item(inOwner, inRow)
     , downloadButton("DownloadModel")
     , cancelButton("StopModelDownload")
 {
@@ -99,7 +101,10 @@ ModelDownloadPanel::ModelDownloadPanel(NeuralNoteAudioProcessor& inProcessor)
     : mProcessor(inProcessor)
 {
     for (const ModelSize size: ALL_MODEL_SIZES) {
-        auto row = std::make_unique<Row>(size);
+        auto row = std::make_unique<Row>(size, *this, static_cast<int>(size));
+
+        // Added first, so the row's buttons stay in front of it.
+        addAndMakeVisible(row->item);
 
         // The Transcribe button's colours: it is the same call to action, one step earlier.
         row->downloadButton.setIcon(nn::icons::downloadStroked, NnFlatButton::IconStyle::stroked, ICON_SIZE);
@@ -148,6 +153,9 @@ ModelDownloadPanel::ModelDownloadPanel(NeuralNoteAudioProcessor& inProcessor)
     mOpenFolderButton.setColour(NnFlatButton::textColourId, nn::colours::textButton);
     mOpenFolderButton.onClick = [] { NNFileUtils::openModelsDirectory(); };
     addAndMakeVisible(mOpenFolderButton);
+
+    setTitle("Transcription model");
+    setDescription("Tick the model to transcribe with, or download another");
 
     mHasInstalledModel = NNFileUtils::isAnyModelInstalled();
     _updateRows(true);
@@ -228,6 +236,17 @@ bool ModelDownloadPanel::_updateRows(bool inForce)
                                                                                      : "Download ")
                                      + juce::String(modelSizeToDisplayName(row->modelSize)));
         row->downloadButton.setVisible(!row->isInstalled && !status.isBusy());
+
+        const juce::String description = _describeRow(*row);
+
+        if (row->item.getTitle() != description) {
+            row->item.setTitle(description);
+        }
+
+        if (row->item.getToggleState() != row->isInUse) {
+            row->item.setToggleState(row->isInUse, juce::dontSendNotification);
+            nn::a11y::notifyToggleStateChanged(row->item);
+        }
         row->cancelButton.setVisible(!row->isInstalled && status.phase == ModelDownloader::Phase::Downloading);
     }
 
@@ -250,6 +269,7 @@ void ModelDownloadPanel::resized()
 
     for (auto& row: mRows) {
         row->bounds = area.removeFromTop(ROW_HEIGHT).reduced(ROW_INSET_X, 0);
+        row->item.setBounds(row->bounds);
         area.removeFromTop(ROW_GAP);
 
         auto column = contentOf(row->bounds).removeFromRight(CONTROL_COLUMN_WIDTH);
@@ -430,5 +450,160 @@ void ModelDownloadPanel::mouseUp(const juce::MouseEvent& inEvent)
     if (row.isInstalled && !row.isInUse) {
         NnGlobalSettings::setModelSize(row.modelSize);
         timerCallback();
+    }
+}
+
+bool ModelDownloadPanel::keyPressed(const juce::KeyPress& inKey)
+{
+    // Escape closes the panel the way its cross does, when it has one: a panel shown because no
+    // model is installed stays.
+    if (inKey == juce::KeyPress::escapeKey && mCloseButton.isVisible()) {
+        if (onCloseRequested != nullptr) {
+            onCloseRequested();
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+void ModelDownloadPanel::visibilityChanged()
+{
+    if (!isVisible()) {
+        return;
+    }
+
+    // The focus goes to the model in use, or to the first row when none is installed, so a screen
+    // reader starts on the choice the panel is for rather than having to Tab its way in.
+    int target = 0;
+
+    for (int i = 0; i < static_cast<int>(mRows.size()); i++) {
+        if (mRows[static_cast<size_t>(i)]->isInUse) {
+            target = i;
+            break;
+        }
+    }
+
+    _focusRow(target);
+}
+
+std::unique_ptr<juce::AccessibilityHandler> ModelDownloadPanel::createAccessibilityHandler()
+{
+    return std::make_unique<juce::AccessibilityHandler>(*this, juce::AccessibilityRole::group);
+}
+
+void ModelDownloadPanel::_pickRow(int inRow)
+{
+    if (!juce::isPositiveAndBelow(inRow, static_cast<int>(mRows.size()))) {
+        return;
+    }
+
+    Row& row = *mRows[static_cast<size_t>(inRow)];
+
+    if (row.isInstalled) {
+        if (!row.isInUse) {
+            NnGlobalSettings::setModelSize(row.modelSize);
+            timerCallback();
+        }
+    } else if (row.downloadButton.isVisible()) {
+        row.downloadButton.triggerClick();
+    }
+}
+
+void ModelDownloadPanel::_focusRow(int inRow)
+{
+    const int row = juce::jlimit(0, static_cast<int>(mRows.size()) - 1, inRow);
+
+    mRows[static_cast<size_t>(row)]->item.grabKeyboardFocus();
+}
+
+juce::String ModelDownloadPanel::_describeRow(const Row& inRow) const
+{
+    const ModelDownloader::Status& status = inRow.status;
+    const juce::String name = modelSizeToDisplayName(inRow.modelSize);
+
+    if (inRow.isInstalled) {
+        return name + ", " + hintFor(inRow.modelSize) + ", " + formatSize(status.totalBytes);
+    }
+
+    // No percentage: the name is re-read whenever it changes, and a running count would be spoken
+    // every second while the row has the focus.
+    switch (status.phase) {
+        case ModelDownloader::Phase::Downloading:
+            return name + ", downloading";
+        case ModelDownloader::Phase::Verifying:
+            return name + ", verifying the download";
+        case ModelDownloader::Phase::Failed:
+            return name + ", download failed: " + status.errorMessage;
+        default:
+            break;
+    }
+
+    return name + ", not installed, " + formatSize(status.totalBytes) + ", " + hintFor(inRow.modelSize);
+}
+
+ModelDownloadPanel::RowItem::RowItem(ModelDownloadPanel& inOwner, int inRow)
+    : mOwner(inOwner)
+    , mRow(inRow)
+{
+    // Its tick follows the model in use, which _updateRows reads back: a press does not flip it on
+    // its own.
+    setToggleable(true);
+    setClickingTogglesState(false);
+    onClick = [this] { mOwner._pickRow(mRow); };
+
+    // The rows under it are clicked through the panel, as before.
+    setInterceptsMouseClicks(false, false);
+    setMouseClickGrabsKeyboardFocus(false);
+    setWantsKeyboardFocus(true);
+}
+
+void ModelDownloadPanel::RowItem::paintButton(juce::Graphics& g, bool inIsHighlighted, bool inIsDown)
+{
+    // The panel paints the row.
+    juce::ignoreUnused(g, inIsHighlighted, inIsDown);
+}
+
+bool ModelDownloadPanel::RowItem::keyPressed(const juce::KeyPress& inKey)
+{
+    if (inKey == juce::KeyPress::upKey) {
+        mOwner._focusRow(mRow - 1);
+        return true;
+    }
+
+    if (inKey == juce::KeyPress::downKey) {
+        mOwner._focusRow(mRow + 1);
+        return true;
+    }
+
+    if (inKey == juce::KeyPress::homeKey) {
+        mOwner._focusRow(0);
+        return true;
+    }
+
+    if (inKey == juce::KeyPress::endKey) {
+        mOwner._focusRow(static_cast<int>(mOwner.mRows.size()) - 1);
+        return true;
+    }
+
+    // Space picks, as in any check box list, rather than reaching the main view's play / pause.
+    if (inKey == juce::KeyPress::spaceKey || inKey == juce::KeyPress::returnKey) {
+        triggerClick();
+        return true;
+    }
+
+    // Escape goes on up to the panel, which closes.
+    return juce::ToggleButton::keyPressed(inKey);
+}
+
+void ModelDownloadPanel::RowItem::focusGained(FocusChangeType inCause)
+{
+    juce::ignoreUnused(inCause);
+
+    // The hover highlight doubles as the keyboard cursor, so the focused row can be seen too.
+    if (mOwner.mHoveredRow != mRow) {
+        mOwner.mHoveredRow = mRow;
+        mOwner.repaint();
     }
 }

@@ -54,7 +54,13 @@ VisualizationPanel::VisualizationPanel(NeuralNoteAudioProcessor* processor)
     addChildComponent(mTranscribeButton);
 
     mModelDownloadPanel.onInstalledModelsChanged = [this] { _layOutTranscribeButton(); };
-    mModelDownloadPanel.onCloseRequested = [this] { setModelPanelOpen(false); };
+    mModelDownloadPanel.onCloseRequested = [this] {
+        setModelPanelOpen(false);
+
+        if (onModelPanelClosed != nullptr) {
+            onModelPanelClosed();
+        }
+    };
     addChildComponent(mModelDownloadPanel);
 
     mStatusBar.onVerticalZoomChange = [this](float inNorm) {

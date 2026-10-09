@@ -49,6 +49,9 @@ public:
 
     bool isModelPanelVisible() const;
 
+    /** Called after the panel's own Close button or Escape has closed it. */
+    std::function<void()> onModelPanelClosed;
+
     Viewport& getAudioMidiViewport();
 
     CombinedAudioMidiRegion& getCombinedAudioMidiRegion();
