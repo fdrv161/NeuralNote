@@ -64,6 +64,8 @@ public:
 
     void enablementChanged() override;
 
+    void buttonStateChanged() override;
+
 private:
     IconBuilder mIconBuilder;
     IconBuilder mOverlayIconBuilder;
@@ -78,6 +80,9 @@ private:
     int mPaddingLeft = 0;
     int mPaddingRight = 0;
     int mIconLabelGap = 7;
+
+    // The toggle state the screen reader was last told about.
+    bool mAnnouncedToggleState = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(NnFlatButton)
 };
