@@ -81,6 +81,8 @@ void InstrumentStrip::setEntry(const InstrumentEntry& inEntry)
     mMuteButton.setTitle("Mute " + mEntry.name);
     mSoloButton.setTitle("Solo " + mEntry.name);
     mFader.setTitle(mEntry.name + " level");
+    setTitle(mEntry.name);
+    setDescription(_metaText());
 
     _updateAppearance();
     repaint();
@@ -90,6 +92,7 @@ void InstrumentStrip::setTranscriptionFinished(bool inIsFinished)
 {
     if (inIsFinished != mTranscriptionFinished) {
         mTranscriptionFinished = inIsFinished;
+        setDescription(_metaText());
         repaint();
     }
 }
@@ -130,6 +133,28 @@ void InstrumentStrip::_updateAppearance()
     // The meter goes unlit on its own, being fed post-fader; this is for the 60 ms it spends
     // draining, and for its unlit track afterwards.
     mMeter.setAlpha(alpha);
+}
+
+juce::String InstrumentStrip::_metaText() const
+{
+    // Drums have no pitch range to report: their key numbers name pieces of a kit, not notes.
+    const juce::String separator = " " + nn::separatorDot() + " ";
+
+    if (!mEntry.hasNotes()) {
+        return mTranscriptionFinished ? "no notes" : juce::String();
+    }
+
+    if (mEntry.program == msl::DRUM_PROGRAM) {
+        return juce::String(mEntry.noteCount) + " hits" + separator + "kit map";
+    }
+
+    return juce::String(mEntry.noteCount) + " notes" + separator + nn::midiNoteName(mEntry.lowestPitch) + "-"
+           + nn::midiNoteName(mEntry.highestPitch);
+}
+
+std::unique_ptr<juce::AccessibilityHandler> InstrumentStrip::createAccessibilityHandler()
+{
+    return std::make_unique<juce::AccessibilityHandler>(*this, juce::AccessibilityRole::group);
 }
 
 void InstrumentStrip::resized()
@@ -206,22 +231,9 @@ void InstrumentStrip::paint(juce::Graphics& g)
     const auto meta_font = nn::fonts::meta();
     const auto meta_area = text_area.withTrimmedTop(META_GAP).withHeight(juce::roundToInt(meta_font.getHeight()));
 
-    // Drums have no pitch range to report: their key numbers name pieces of a kit, not notes.
-    const juce::String separator = " " + nn::separatorDot() + " ";
-    juce::String meta;
-
-    if (!mEntry.hasNotes()) {
-        meta = mTranscriptionFinished ? "no notes" : juce::String();
-    } else if (mEntry.program == msl::DRUM_PROGRAM) {
-        meta = juce::String(mEntry.noteCount) + " hits" + separator + "kit map";
-    } else {
-        meta = juce::String(mEntry.noteCount) + " notes" + separator + nn::midiNoteName(mEntry.lowestPitch) + "-"
-               + nn::midiNoteName(mEntry.highestPitch);
-    }
-
     g.setColour(nn::colours::textFainter.withMultipliedAlpha(alpha));
     g.setFont(meta_font);
-    g.drawText(meta, meta_area, juce::Justification::centredLeft, true);
+    g.drawText(_metaText(), meta_area, juce::Justification::centredLeft, true);
 
     bounds.removeFromTop(FADER_TOP_GAP);
 

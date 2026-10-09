@@ -74,6 +74,7 @@ Sidebar::Sidebar(NeuralNoteAudioProcessor& inProcessor)
 {
     mViewport.setViewedComponent(&mStripList, false);
     mViewport.setScrollBarsShown(true, false);
+    mViewport.setTitle("Instrument mixer");
     addAndMakeVisible(mViewport);
 
     mAddButton.setIcon(nn::icons::plusStroked, NnFlatButton::IconStyle::stroked, 13.0f);

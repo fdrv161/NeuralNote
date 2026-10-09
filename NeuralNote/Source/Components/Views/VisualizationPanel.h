@@ -11,6 +11,7 @@
 #include "Keyboard.h"
 #include "ModelDownloadPanel.h"
 #include "NnFlatButton.h"
+#include "NnGroupViewport.h"
 #include "NnToolbar.h"
 #include "PluginProcessor.h"
 #include "StatusBar.h"
@@ -88,7 +89,7 @@ private:
     NnToolbar mToolbar;
     TimelineGutter mGutter;
     Keyboard mKeyboard;
-    Viewport mAudioMidiViewport;
+    NnGroupViewport mAudioMidiViewport;
     CombinedAudioMidiRegion mCombinedAudioMidiRegion;
     StatusBar mStatusBar;
 

@@ -43,9 +43,15 @@ public:
 
     void resized() override;
 
+    /** A group named after the instrument, so a screen reader says whose controls these are. */
+    std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override;
+
 private:
     /** Re-derives the fader's colours and the strip's muted opacity. */
     void _updateAppearance();
+
+    /** The line under the name: note count and range, or why there are none. */
+    juce::String _metaText() const;
 
     InstrumentMixer& mMixer;
     int mProgram;
