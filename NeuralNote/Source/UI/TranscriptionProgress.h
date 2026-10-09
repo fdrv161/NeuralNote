@@ -39,6 +39,9 @@ private:
     /** The phase and percentage in words, as a screen reader reads the bar. */
     juce::String _getProgressText() const;
 
+    /** Speaks a phase change or each further tenth of the transcription, wherever the focus is. */
+    void _announceProgress();
+
     NeuralNoteAudioProcessor& mProcessor;
 
     NnFlatButton mCancelButton {"CancelTranscription"};
@@ -54,6 +57,11 @@ private:
     // Negative while the phase has no measurable progress yet.
     int mDisplayedPercent = -1;
     float mPulse = 1.0f;
+
+    // What the screen reader was last told unprompted: the phase, then each tenth of the way through.
+    bool mHasAnnouncedPhase = false;
+    MuscriptorEngine::Phase mAnnouncedPhase = MuscriptorEngine::Phase::LoadingModel;
+    int mAnnouncedTenths = 0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TranscriptionProgress)
 };

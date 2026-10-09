@@ -64,6 +64,9 @@ private:
 
     State mPrevState = EmptyAudioAndMidiRegions;
 
+    // Whether the last timer tick saw a transcription running, so its end can be spoken.
+    bool mWasTranscribing = false;
+
     TopBar mTopBar;
     Sidebar mSidebar;
     VisualizationPanel mVisualizationPanel;
