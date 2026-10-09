@@ -58,18 +58,15 @@ NnToolbar::NnToolbar(NeuralNoteAudioProcessor& inProcessor)
     mExportButton.setColour(NnFlatButton::iconColourId, nn::colours::textIconSoft);
     mExportButton.setColour(NnFlatButton::textColourId, nn::colours::textButton);
     mExportButton.setTooltip("Write the transcribed MIDI to a file");
-    mExportButton.setWantsKeyboardFocus(false);
     mExportButton.onClick = [this] { _exportMidiFile(); };
     addAndMakeVisible(mExportButton);
 
-    mDragButton.setWantsKeyboardFocus(false);
     addAndMakeVisible(mDragButton);
 
     mClearButton.setIcon(nn::icons::trashStroked, NnFlatButton::IconStyle::stroked, 13.0f);
     mClearButton.setColour(NnFlatButton::backgroundColourId, nn::colours::bgControlAlt);
     mClearButton.setColour(NnFlatButton::iconColourId, nn::colours::textIconSoft);
     mClearButton.setTooltip(NeuralNoteTooltips::clear);
-    mClearButton.setWantsKeyboardFocus(false);
     mClearButton.onClick = [this] { _clearOneStep(); };
     addAndMakeVisible(mClearButton);
 

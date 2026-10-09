@@ -98,7 +98,6 @@ TopBar::TopBar(NeuralNoteAudioProcessor& inProcessor)
     auto add_transport = [this](NnFlatButton& button, const juce::String& tooltip) {
         button.setColour(NnFlatButton::backgroundColourId, juce::Colours::transparentBlack);
         button.setTooltip(tooltip);
-        button.setWantsKeyboardFocus(false);
         addAndMakeVisible(button);
     };
 
@@ -169,7 +168,6 @@ TopBar::TopBar(NeuralNoteAudioProcessor& inProcessor)
     mModelButton.setColour(NnFlatButton::textColourId, nn::colours::textButton);
     mModelButton.setColour(NnFlatButton::textOnColourId, nn::colours::accentText);
     mModelButton.setTooltip(NeuralNoteTooltips::model);
-    mModelButton.setWantsKeyboardFocus(false);
     addAndMakeVisible(mModelButton);
     syncModelButton(false);
 
@@ -200,7 +198,6 @@ TopBar::TopBar(NeuralNoteAudioProcessor& inProcessor)
     mMuteButton.setColour(NnFlatButton::textColourId, nn::colours::textIcon);
     mMuteButton.setColour(NnFlatButton::textOnColourId, nn::colours::warn);
     mMuteButton.setTooltip(NeuralNoteTooltips::mute);
-    mMuteButton.setWantsKeyboardFocus(false);
     mMuteAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
         mProcessor.getAPVTS(), ParameterHelpers::getIdStr(ParameterHelpers::MuteId), mMuteButton);
     addAndMakeVisible(mMuteButton);
@@ -209,7 +206,6 @@ TopBar::TopBar(NeuralNoteAudioProcessor& inProcessor)
     mSettingsButton.setColour(NnFlatButton::backgroundColourId, nn::colours::bgControl);
     mSettingsButton.setColour(NnFlatButton::iconColourId, nn::colours::textIcon);
     mSettingsButton.setTooltip(NeuralNoteTooltips::settings);
-    mSettingsButton.setWantsKeyboardFocus(false);
     addAndMakeVisible(mSettingsButton);
 
     updateEnablements();

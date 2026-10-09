@@ -47,7 +47,6 @@ UpdateCheck::UpdateCheck()
     mSeeUpdateButton.setColour(NnFlatButton::backgroundColourId, nn::colours::accentFillButton());
     mSeeUpdateButton.setColour(NnFlatButton::outlineColourId, nn::colours::accent);
     mSeeUpdateButton.setColour(NnFlatButton::textColourId, nn::colours::accentText);
-    mSeeUpdateButton.setWantsKeyboardFocus(false);
     mSeeUpdateButton.onClick = [this] { mLatestReleaseUrl.launchInDefaultBrowser(); };
     addChildComponent(mSeeUpdateButton);
 
@@ -56,7 +55,6 @@ UpdateCheck::UpdateCheck()
     mDismissButton.setIcon(nn::icons::crossStroked, NnFlatButton::IconStyle::stroked, nn::metrics::cancelGlyphSize);
     mDismissButton.setCornerRadius(4.0f);
     mDismissButton.setTooltip("Dismiss");
-    mDismissButton.setWantsKeyboardFocus(false);
     mDismissButton.onClick = [this] { _hideNotification(); };
     addAndMakeVisible(mDismissButton);
 }

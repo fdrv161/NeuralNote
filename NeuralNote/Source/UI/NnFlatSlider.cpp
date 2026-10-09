@@ -21,6 +21,11 @@ NnFlatSlider::NnFlatSlider()
     setColour(thumbColourId, nn::colours::faderThumb);
 
     setMouseCursor(juce::MouseCursor::PointingHandCursor);
+
+    // juce::Slider opts out of keyboard focus by default. Opted back in so Tab, the arrow keys and
+    // screen readers can reach it; a click still leaves the focus where it was.
+    setWantsKeyboardFocus(true);
+    setMouseClickGrabsKeyboardFocus(false);
 }
 
 NnFlatSlider::~NnFlatSlider()

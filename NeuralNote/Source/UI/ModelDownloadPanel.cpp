@@ -109,7 +109,6 @@ ModelDownloadPanel::ModelDownloadPanel(NeuralNoteAudioProcessor& inProcessor)
         row->downloadButton.setColour(NnFlatButton::outlineColourId, nn::colours::ctaBorder);
         row->downloadButton.setColour(NnFlatButton::iconColourId, nn::colours::ctaText);
         row->downloadButton.setColour(NnFlatButton::textColourId, nn::colours::ctaText);
-        row->downloadButton.setWantsKeyboardFocus(false);
         row->downloadButton.onClick = [this, size] {
             mProcessor.getModelDownloader().start(size);
             timerCallback();
@@ -120,7 +119,6 @@ ModelDownloadPanel::ModelDownloadPanel(NeuralNoteAudioProcessor& inProcessor)
             nn::icons::crossStroked, NnFlatButton::IconStyle::stroked, nn::metrics::cancelGlyphSize);
         row->cancelButton.setCornerRadius(4.0f);
         row->cancelButton.setTooltip(NeuralNoteTooltips::stop_model_download);
-        row->cancelButton.setWantsKeyboardFocus(false);
         row->cancelButton.onClick = [this, size] { mProcessor.getModelDownloader().cancel(size); };
         addChildComponent(row->cancelButton);
 
@@ -130,7 +128,6 @@ ModelDownloadPanel::ModelDownloadPanel(NeuralNoteAudioProcessor& inProcessor)
     mCloseButton.setIcon(nn::icons::crossStroked, NnFlatButton::IconStyle::stroked, nn::metrics::cancelGlyphSize);
     mCloseButton.setCornerRadius(4.0f);
     mCloseButton.setTooltip("Close");
-    mCloseButton.setWantsKeyboardFocus(false);
     mCloseButton.onClick = [this] {
         if (onCloseRequested != nullptr) {
             onCloseRequested();
@@ -146,7 +143,6 @@ ModelDownloadPanel::ModelDownloadPanel(NeuralNoteAudioProcessor& inProcessor)
     mOpenFolderButton.setColour(NnFlatButton::outlineColourId, nn::colours::popupBorder);
     mOpenFolderButton.setColour(NnFlatButton::iconColourId, nn::colours::textIcon);
     mOpenFolderButton.setColour(NnFlatButton::textColourId, nn::colours::textButton);
-    mOpenFolderButton.setWantsKeyboardFocus(false);
     mOpenFolderButton.onClick = [] { NNFileUtils::openModelsDirectory(); };
     addAndMakeVisible(mOpenFolderButton);
 
