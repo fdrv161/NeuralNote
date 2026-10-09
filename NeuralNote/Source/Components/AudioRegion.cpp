@@ -40,6 +40,7 @@ AudioRegion::AudioRegion(NeuralNoteAudioProcessor* processor, double inBaseNumPi
     mLoadButton.setColour(NnFlatButton::iconColourId, nn::colours::ctaText);
     mLoadButton.setColour(NnFlatButton::textColourId, nn::colours::ctaText);
     mLoadButton.setTooltip(NeuralNoteTooltips::load_audio);
+    mLoadButton.setTitle("Load audio file");
     mLoadButton.onClick = [this] { _openFileChooser(); };
     addChildComponent(mLoadButton);
 

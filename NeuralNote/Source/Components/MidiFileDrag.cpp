@@ -24,6 +24,7 @@ MidiFileDrag::MidiFileDrag(NeuralNoteAudioProcessor* inProcessor)
     setColour(textColourId, nn::colours::accentText);
 
     setTooltip("Drag the transcribed MIDI into your DAW");
+    setTitle("Drag MIDI out");
 }
 
 MidiFileDrag::~MidiFileDrag()

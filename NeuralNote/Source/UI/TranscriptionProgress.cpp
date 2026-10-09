@@ -51,6 +51,7 @@ TranscriptionProgress::TranscriptionProgress(NeuralNoteAudioProcessor& inProcess
     mCancelButton.setIcon(nn::icons::crossStroked, NnFlatButton::IconStyle::stroked, nn::metrics::cancelGlyphSize);
     mCancelButton.setCornerRadius(4.0f);
     mCancelButton.setTooltip(NeuralNoteTooltips::cancel_transcription);
+    mCancelButton.setTitle("Cancel transcription");
 
     // Not guarded on mIsCancelling: cancelling is idempotent, and a button that stops responding to
     // the second click is a button the user has to assume is broken.

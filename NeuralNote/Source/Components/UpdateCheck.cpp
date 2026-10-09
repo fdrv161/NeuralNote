@@ -41,6 +41,7 @@ bool isNewerVersion(const juce::String& inCandidate, const juce::String& inCurre
 UpdateCheck::UpdateCheck()
 {
     mSeeUpdateButton.setLabel("See update", nn::fonts::buttonLabel());
+    mSeeUpdateButton.setTitle("See update");
     mSeeUpdateButton.setPadding(12, 12, 0);
 
     // Accent-outlined, like Drag MIDI out: it is the one thing this notification is asking for.
@@ -55,6 +56,7 @@ UpdateCheck::UpdateCheck()
     mDismissButton.setIcon(nn::icons::crossStroked, NnFlatButton::IconStyle::stroked, nn::metrics::cancelGlyphSize);
     mDismissButton.setCornerRadius(4.0f);
     mDismissButton.setTooltip("Dismiss");
+    mDismissButton.setTitle("Dismiss update notification");
     mDismissButton.onClick = [this] { _hideNotification(); };
     addAndMakeVisible(mDismissButton);
 }

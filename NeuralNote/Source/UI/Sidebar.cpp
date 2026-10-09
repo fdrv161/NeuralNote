@@ -83,6 +83,7 @@ Sidebar::Sidebar(NeuralNoteAudioProcessor& inProcessor)
     mAddButton.setColour(NnFlatButton::backgroundOnColourId, nn::colours::accentFillToggle());
     mAddButton.setColour(NnFlatButton::iconOnColourId, nn::colours::accentText);
     mAddButton.setTooltip(NeuralNoteTooltips::add_instrument);
+    mAddButton.setTitle("Add instruments");
     mAddButton.onClick = [this] {
         if (onAddInstrument != nullptr) {
             onAddInstrument();

@@ -106,6 +106,7 @@ TopBar::TopBar(NeuralNoteAudioProcessor& inProcessor)
     // onClick belongs to the main view: returning to the start also scrolls the timeline back,
     // which is not this component's to do.
     add_transport(mBackButton, NeuralNoteTooltips::back);
+    mBackButton.setTitle("Back to start");
 
     // One button showing whichever icon is the action available now: pause while it plays.
     mPlayPauseButton.setClickingTogglesState(true);
@@ -125,6 +126,7 @@ TopBar::TopBar(NeuralNoteAudioProcessor& inProcessor)
         syncTransportToggles();
     };
     add_transport(mPlayPauseButton, NeuralNoteTooltips::play_pause);
+    mPlayPauseButton.setTitle("Play");
 
     mLoopButton.setClickingTogglesState(true);
     mLoopButton.setIcon(nn::icons::loopStroked, NnFlatButton::IconStyle::stroked, 16.0f);
@@ -133,6 +135,7 @@ TopBar::TopBar(NeuralNoteAudioProcessor& inProcessor)
     mLoopButton.setColour(NnFlatButton::iconOnColourId, nn::colours::accent);
     mLoopButton.setColour(NnFlatButton::backgroundOnColourId, nn::colours::accentFillActive());
     add_transport(mLoopButton, NeuralNoteTooltips::loop);
+    mLoopButton.setTitle("Loop");
 
     mFollowButton.setClickingTogglesState(true);
     mFollowButton.setIcon(nn::icons::followPlayheadStroked, NnFlatButton::IconStyle::stroked, 16.0f);
@@ -141,6 +144,7 @@ TopBar::TopBar(NeuralNoteAudioProcessor& inProcessor)
     mFollowButton.setColour(NnFlatButton::iconOnColourId, nn::colours::accent);
     mFollowButton.setColour(NnFlatButton::backgroundOnColourId, nn::colours::accentFillActive());
     add_transport(mFollowButton, NeuralNoteTooltips::center);
+    mFollowButton.setTitle("Follow playhead");
 
     mRecordButton.setClickingTogglesState(true);
     mRecordButton.setIcon(nn::icons::record, NnFlatButton::IconStyle::filled, 16.0f);
@@ -158,6 +162,7 @@ TopBar::TopBar(NeuralNoteAudioProcessor& inProcessor)
     };
     mRecordButton.setToggleState(mProcessor.getState() == Recording, juce::dontSendNotification);
     add_transport(mRecordButton, NeuralNoteTooltips::record);
+    mRecordButton.setTitle("Record");
 
     addAndMakeVisible(mTimeDisplay);
 
@@ -174,6 +179,7 @@ TopBar::TopBar(NeuralNoteAudioProcessor& inProcessor)
     mMixSlider.setColour(NnFlatSlider::trackColourId, nn::colours::faderTrackTop);
     mMixSlider.setColour(NnFlatSlider::fillColourId, nn::colours::mixSliderFill());
     mMixSlider.setTooltip("Balance between the source audio and the synthesised transcription");
+    mMixSlider.setTitle("Mix");
     mMixAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
         mProcessor.getAPVTS(), ParameterHelpers::getIdStr(ParameterHelpers::MixId), mMixSlider);
     addAndMakeVisible(mMixSlider);
@@ -181,6 +187,7 @@ TopBar::TopBar(NeuralNoteAudioProcessor& inProcessor)
     mMasterGainSlider.setColour(NnFlatSlider::trackColourId, nn::colours::faderTrackTop);
     mMasterGainSlider.setColour(NnFlatSlider::fillColourId, nn::colours::volumeFill);
     mMasterGainSlider.setTooltip("Output level");
+    mMasterGainSlider.setTitle("Output volume");
     // The pill paints the dB readout, so it has to repaint with the fader.
     mMasterGainSlider.onValueChange = [this] { repaint(); };
     mMasterGainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
@@ -198,6 +205,7 @@ TopBar::TopBar(NeuralNoteAudioProcessor& inProcessor)
     mMuteButton.setColour(NnFlatButton::textColourId, nn::colours::textIcon);
     mMuteButton.setColour(NnFlatButton::textOnColourId, nn::colours::warn);
     mMuteButton.setTooltip(NeuralNoteTooltips::mute);
+    mMuteButton.setTitle("Mute input");
     mMuteAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
         mProcessor.getAPVTS(), ParameterHelpers::getIdStr(ParameterHelpers::MuteId), mMuteButton);
     addAndMakeVisible(mMuteButton);
@@ -206,6 +214,7 @@ TopBar::TopBar(NeuralNoteAudioProcessor& inProcessor)
     mSettingsButton.setColour(NnFlatButton::backgroundColourId, nn::colours::bgControl);
     mSettingsButton.setColour(NnFlatButton::iconColourId, nn::colours::textIcon);
     mSettingsButton.setTooltip(NeuralNoteTooltips::settings);
+    mSettingsButton.setTitle("Settings");
     addAndMakeVisible(mSettingsButton);
 
     updateEnablements();
@@ -426,6 +435,9 @@ void TopBar::syncModelButton(bool inModelPanelVisible)
         mModelButtonLabel = label;
         // The mute button's type, so the two labelled buttons of this bar read as a pair.
         mModelButton.setLabel(label, nn::fonts::sectionHeader(), MODEL_LABEL_TRACKING);
+        // The label is drawn in capitals, which screen readers would spell out.
+        mModelButton.setTitle("Model: "
+                              + juce::String(in_use.has_value() ? modelSizeToDisplayName(*in_use) : "None"));
     }
 
     if (mModelButton.getToggleState() != inModelPanelVisible) {
