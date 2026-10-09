@@ -36,7 +36,6 @@ InstrumentStrip::InstrumentStrip(InstrumentMixer& inMixer, int inProgram)
         button.setColour(NnFlatButton::backgroundOnColourId, inOnBackground);
         button.setColour(NnFlatButton::textColourId, nn::colours::textDim);
         button.setColour(NnFlatButton::textOnColourId, inOnText);
-        button.setWantsKeyboardFocus(false);
         addAndMakeVisible(button);
     };
 

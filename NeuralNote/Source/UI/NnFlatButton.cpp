@@ -19,6 +19,10 @@ NnFlatButton::NnFlatButton(const juce::String& inName)
     setColour(outlineOnColourId, juce::Colours::transparentBlack);
 
     setMouseCursor(juce::MouseCursor::PointingHandCursor);
+
+    // Reachable with Tab for keyboard and screen reader users, but a click leaves the focus where it
+    // was, so the main view keeps hearing its transport shortcuts.
+    setMouseClickGrabsKeyboardFocus(false);
 }
 
 void NnFlatButton::setIcon(IconBuilder inBuilder, IconStyle inStyle, float inSizePx)

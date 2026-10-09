@@ -55,7 +55,6 @@ StatusBar::StatusBar(NeuralNoteAudioProcessor& inProcessor)
     mZoomSlider.setColour(NnFlatSlider::fillColourId, nn::colours::zoomFill);
     mZoomSlider.setColour(NnFlatSlider::thumbColourId, nn::colours::zoomThumb);
     mZoomSlider.setTooltip("Piano roll vertical zoom");
-    mZoomSlider.setWantsKeyboardFocus(false);
     mZoomSlider.onValueChange = [this] {
         if (onVerticalZoomChange != nullptr) {
             onVerticalZoomChange(static_cast<float>(mZoomSlider.getValue()));
