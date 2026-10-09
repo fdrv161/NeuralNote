@@ -52,11 +52,39 @@ public:
 
     void mouseUp(const juce::MouseEvent& inEvent) override;
 
+    bool keyPressed(const juce::KeyPress& inKey) override;
+
+    void visibilityChanged() override;
+
+    std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override;
+
 private:
+    /**
+     * A row as a screen reader sees it: a check box named after the model, ticked for the model in
+     * use. Invisible and transparent to the mouse; the panel draws the rows and takes their clicks.
+     * Up/Down move between rows, Space or Return picks the model, or downloads one not installed.
+     */
+    class RowItem : public juce::ToggleButton
+    {
+    public:
+        RowItem(ModelDownloadPanel& inOwner, int inRow);
+
+        void paintButton(juce::Graphics& g, bool inIsHighlighted, bool inIsDown) override;
+
+        bool keyPressed(const juce::KeyPress& inKey) override;
+
+        void focusGained(FocusChangeType inCause) override;
+
+    private:
+        ModelDownloadPanel& mOwner;
+        const int mRow;
+    };
+
     struct Row {
-        explicit Row(ModelSize inModelSize);
+        Row(ModelSize inModelSize, ModelDownloadPanel& inOwner, int inRow);
 
         const ModelSize modelSize;
+        RowItem item;
         NnFlatButton downloadButton;
         NnFlatButton cancelButton;
         ModelDownloader::Status status;
@@ -77,6 +105,14 @@ private:
 
     /** @return The index of the row under inPosition, or -1. */
     int _rowAt(juce::Point<int> inPosition) const;
+
+    /** What a click on the row does, and for a model not installed, what its Download button does. */
+    void _pickRow(int inRow);
+
+    void _focusRow(int inRow);
+
+    /** The row's name, size and state, for a screen reader; the tick is its toggle state. */
+    juce::String _describeRow(const Row& inRow) const;
 
     NeuralNoteAudioProcessor& mProcessor;
 

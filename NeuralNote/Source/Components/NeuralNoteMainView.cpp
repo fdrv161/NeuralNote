@@ -51,6 +51,12 @@ NeuralNoteMainView::NeuralNoteMainView(NeuralNoteAudioProcessor& processor)
         mTopBar.syncModelButton(mVisualizationPanel.isModelPanelVisible());
     };
 
+    // Closed from inside the panel: the focus was in it, and goes back to the button that opened it.
+    mVisualizationPanel.onModelPanelClosed = [this] {
+        mTopBar.syncModelButton(mVisualizationPanel.isModelPanelVisible());
+        mTopBar.getModelButton().grabKeyboardFocus();
+    };
+
     mTopBar.getSettingsButton().onClick = [this] {
         _buildSettingsMenu();
         mSettingsMenu->showMenuAsync(PopupMenu::Options().withTargetComponent(&mTopBar.getSettingsButton()));
