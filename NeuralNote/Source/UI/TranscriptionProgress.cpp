@@ -88,7 +88,7 @@ std::unique_ptr<juce::AccessibilityHandler> TranscriptionProgress::createAccessi
 
         void setValueAsString(const juce::String&) override {}
 
-        juce::AccessibleValueRange getRange() const override { return {{0.0, 100.0}, 1.0}; }
+        AccessibleValueRange getRange() const override { return {{0.0, 100.0}, 1.0}; }
 
     private:
         TranscriptionProgress& mOwner;
