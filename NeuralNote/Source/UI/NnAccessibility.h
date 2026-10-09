@@ -5,6 +5,8 @@
 #ifndef NnAccessibility_h
 #define NnAccessibility_h
 
+#include <functional>
+
 #include <JuceHeader.h>
 
 namespace nn::a11y
@@ -18,6 +20,14 @@ namespace nn::a11y
  * this after changing the toggle state of a toggleable button. It does nothing elsewhere.
  */
 void notifyToggleStateChanged(juce::Component& inComponent);
+
+/**
+ * A handler for a painted read-out (status line, time display): static text whose name is the text
+ * it currently shows, built each time the screen reader asks. Return it from the component's
+ * createAccessibilityHandler(), and give the component keyboard focus so it is a Tab stop.
+ */
+std::unique_ptr<juce::AccessibilityHandler> makeReadoutHandler(juce::Component& inComponent,
+                                                               std::function<juce::String()> inText);
 } // namespace nn::a11y
 
 #endif // NnAccessibility_h

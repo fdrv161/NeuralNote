@@ -4,6 +4,7 @@
 
 #include "StatusBar.h"
 
+#include "NnAccessibility.h"
 #include "NnFonts.h"
 #include "NnIcons.h"
 #include "NnLook.h"
@@ -47,6 +48,9 @@ StatusBar::StatusBar(NeuralNoteAudioProcessor& inProcessor)
 {
     // The bar itself is a label; its two controls are not.
     setInterceptsMouseClicks(false, true);
+
+    // A Tab stop of its own, so a screen reader can read the figures painted on the left.
+    setWantsKeyboardFocus(true);
 
     addChildComponent(mProgress);
 
@@ -109,6 +113,16 @@ void StatusBar::paint(juce::Graphics& g)
         nn::icons::verticalZoomStroked(mZoomIconBounds.toFloat()),
         juce::PathStrokeType(nn::icons::STROKE_WIDTH, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 
+    drawSegments(g, _getSegments(), getLocalBounds().reduced(PADDING_SIDE, 0));
+}
+
+std::unique_ptr<juce::AccessibilityHandler> StatusBar::createAccessibilityHandler()
+{
+    return nn::a11y::makeReadoutHandler(*this, [this] { return "Status: " + _getSegments().joinIntoString(", "); });
+}
+
+juce::StringArray StatusBar::_getSegments() const
+{
     const InstrumentMixer* mixer = mProcessor.getInstrumentMixer();
     const auto num_instruments = static_cast<int>(mixer->getEntries().size());
 
@@ -134,7 +148,7 @@ void StatusBar::paint(juce::Graphics& g)
         segments.add(juce::String(duration, 2) + " s");
     }
 
-    drawSegments(g, segments, getLocalBounds().reduced(PADDING_SIDE, 0));
+    return segments;
 }
 
 void StatusBar::changeListenerCallback(juce::ChangeBroadcaster* inSource)

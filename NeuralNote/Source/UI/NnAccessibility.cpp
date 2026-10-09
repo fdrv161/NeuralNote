@@ -19,6 +19,30 @@ void sendAccessibilityPropertyChangedEvent(const AccessibilityHandler&, PROPERTY
 } // namespace juce
 #endif
 
+namespace
+{
+class ReadoutHandler final : public juce::AccessibilityHandler
+{
+public:
+    ReadoutHandler(juce::Component& inComponent, std::function<juce::String()> inText)
+        : juce::AccessibilityHandler(inComponent, juce::AccessibilityRole::staticText)
+        , mText(std::move(inText))
+    {
+    }
+
+    juce::String getTitle() const override { return mText(); }
+
+private:
+    std::function<juce::String()> mText;
+};
+} // namespace
+
+std::unique_ptr<juce::AccessibilityHandler> nn::a11y::makeReadoutHandler(juce::Component& inComponent,
+                                                                         std::function<juce::String()> inText)
+{
+    return std::make_unique<ReadoutHandler>(inComponent, std::move(inText));
+}
+
 void nn::a11y::notifyToggleStateChanged(juce::Component& inComponent)
 {
 #if JUCE_WINDOWS

@@ -32,6 +32,8 @@ public:
 
     void paint(juce::Graphics& g) override;
 
+    std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override;
+
     /** Re-derives whether the progress group is showing. */
     void updateEnablements();
 
@@ -43,6 +45,9 @@ public:
 
 private:
     void changeListenerCallback(juce::ChangeBroadcaster* inSource) override;
+
+    /** What the bar shows on the left: counts, model, pitch range and duration. */
+    juce::StringArray _getSegments() const;
 
     NeuralNoteAudioProcessor& mProcessor;
 
