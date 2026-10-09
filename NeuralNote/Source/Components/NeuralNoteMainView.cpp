@@ -8,6 +8,7 @@
 #include "MidiFileWriter.h"
 #include "NeuralNoteTooltips.h"
 #include "NNFileUtils.h"
+#include "NnAccessibility.h"
 #include "NnFonts.h"
 #include "NnGlobalSettings.h"
 #include "NnLook.h"
@@ -141,6 +142,22 @@ void NeuralNoteMainView::timerCallback()
     mTopBar.syncModelButton(mVisualizationPanel.isModelPanelVisible());
 
     const State processor_state = mProcessor.getState();
+
+    // The progress is spoken as it goes; the end is spoken here, with what it produced.
+    const bool is_transcribing = processor_state == Processing;
+
+    if (mWasTranscribing && !is_transcribing) {
+        if (processor_state == PopulatedAudioAndMidiRegions) {
+            const int num_notes = mProcessor.getInstrumentMixer()->getTotalNoteCount();
+            nn::a11y::announce(*this,
+                               "Transcription finished, " + juce::String(num_notes)
+                                   + (num_notes == 1 ? " note" : " notes"));
+        } else {
+            nn::a11y::announce(*this, "Transcription stopped");
+        }
+    }
+
+    mWasTranscribing = is_transcribing;
 
     if (mPrevState != processor_state) {
         mPrevState = processor_state;

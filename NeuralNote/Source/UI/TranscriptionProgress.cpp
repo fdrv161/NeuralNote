@@ -5,6 +5,7 @@
 #include "TranscriptionProgress.h"
 
 #include "NeuralNoteTooltips.h"
+#include "NnAccessibility.h"
 #include "NnFonts.h"
 #include "NnIcons.h"
 #include "NnLook.h"
@@ -101,6 +102,32 @@ std::unique_ptr<juce::AccessibilityHandler> TranscriptionProgress::createAccessi
         juce::AccessibilityHandler::Interfaces {std::make_unique<ValueInterface>(*this)});
 }
 
+void TranscriptionProgress::_announceProgress()
+{
+    // Only the bar shows the progress, and a screen reader stays silent about a progress bar that
+    // does not have the focus, so the milestones are spoken instead.
+    if (!isShowing()) {
+        return;
+    }
+
+    if (!mHasAnnouncedPhase || mAnnouncedPhase != mDisplayedPhase) {
+        mHasAnnouncedPhase = true;
+        mAnnouncedPhase = mDisplayedPhase;
+        mAnnouncedTenths = 0;
+        nn::a11y::announce(*this,
+                           mDisplayedPhase == MuscriptorEngine::Phase::LoadingModel ? "Loading model" : "Transcribing");
+        return;
+    }
+
+    // 100% is left to the end of the run, which says how it ended.
+    const int tenths = mDisplayedPercent / 10;
+
+    if (mDisplayedPhase == MuscriptorEngine::Phase::Transcribing && tenths > mAnnouncedTenths && tenths < 10) {
+        mAnnouncedTenths = tenths;
+        nn::a11y::announce(*this, juce::String(tenths * 10) + "%");
+    }
+}
+
 juce::String TranscriptionProgress::_getProgressText() const
 {
     juce::String text = mDisplayedPhase == MuscriptorEngine::Phase::LoadingModel ? "Loading model" : "Transcribing";
@@ -186,6 +213,8 @@ void TranscriptionProgress::_onVBlankCallback()
         mDisplayedPhase = MuscriptorEngine::Phase::LoadingModel;
         mDisplayedPercent = -1;
         mPulse = 1.0f;
+        mHasAnnouncedPhase = false;
+        mAnnouncedTenths = 0;
         return;
     }
 
@@ -214,5 +243,7 @@ void TranscriptionProgress::_onVBlankCallback()
         if (auto* handler = getAccessibilityHandler()) {
             handler->notifyAccessibilityEvent(juce::AccessibilityEvent::valueChanged);
         }
+
+        _announceProgress();
     }
 }
