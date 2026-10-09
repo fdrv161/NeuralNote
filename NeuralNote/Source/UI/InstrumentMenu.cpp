@@ -8,6 +8,7 @@
 
 #include "InstrumentInfo.h"
 #include "InstrumentSelection.h"
+#include "NnAccessibility.h"
 #include "NnFonts.h"
 #include "NnLook.h"
 #include "PluginProcessor.h"
@@ -231,7 +232,12 @@ void InstrumentMenu::RowList::syncTicks()
     const std::vector<msl::InstrumentGroup> selected = InstrumentSelection::get(mProcessor.getValueTree());
 
     for (std::size_t i = 0; i < mItems.size(); i++) {
-        mItems[i]->setToggleState(_isTicked(mEntries[i], selected), juce::dontSendNotification);
+        const bool ticked = _isTicked(mEntries[i], selected);
+
+        if (mItems[i]->getToggleState() != ticked) {
+            mItems[i]->setToggleState(ticked, juce::dontSendNotification);
+            nn::a11y::notifyToggleStateChanged(*mItems[i]);
+        }
     }
 }
 
