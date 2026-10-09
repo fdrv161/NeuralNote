@@ -4,6 +4,7 @@
 
 #include "TimeDisplay.h"
 
+#include "NnAccessibility.h"
 #include "NnFonts.h"
 #include "NnLook.h"
 #include "PluginProcessor.h"
@@ -18,6 +19,14 @@ TimeDisplay::TimeDisplay(NeuralNoteAudioProcessor* inProcessor)
     , mVBlankAttachment(this, [this]() { _onVBlankCallback(); })
 {
     setInterceptsMouseClicks(false, false);
+
+    // A Tab stop of its own, so a screen reader can read the playhead position.
+    setWantsKeyboardFocus(true);
+}
+
+std::unique_ptr<juce::AccessibilityHandler> TimeDisplay::createAccessibilityHandler()
+{
+    return nn::a11y::makeReadoutHandler(*this, [this] { return "Position " + mPosition + " of " + mTotal; });
 }
 
 int TimeDisplay::getIdealWidth()
