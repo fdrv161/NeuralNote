@@ -41,6 +41,9 @@ public:
 
     bool keyPressed(const KeyPress& key) override;
 
+    /** A named group: it takes the focus for the transport shortcuts, and NVDA read it as "unknown". */
+    std::unique_ptr<AccessibilityHandler> createAccessibilityHandler() override;
+
 private:
     void updateEnablements();
 

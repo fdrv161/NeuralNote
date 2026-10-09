@@ -25,6 +25,7 @@ VisualizationPanel::VisualizationPanel(NeuralNoteAudioProcessor* processor)
 
     mAudioMidiViewport.setViewedComponent(&mCombinedAudioMidiRegion, false);
     mAudioMidiViewport.setScrollBarsShown(false, true, false, false);
+    mAudioMidiViewport.setTitle("Timeline");
 
     // Recoloured through the scrollbar's own colour ids rather than a LookAndFeel; the default is
     // a saturated blue that reads as an accent this palette does not have.

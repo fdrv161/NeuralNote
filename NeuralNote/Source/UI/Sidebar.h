@@ -13,6 +13,7 @@
 
 #include "InstrumentStrip.h"
 #include "NnFlatButton.h"
+#include "NnGroupViewport.h"
 #include "NnLevelMeter.h"
 
 class NeuralNoteAudioProcessor;
@@ -82,7 +83,7 @@ private:
 
     NeuralNoteAudioProcessor& mProcessor;
 
-    juce::Viewport mViewport;
+    NnGroupViewport mViewport;
     StripList mStripList;
 
     NnFlatButton mAddButton {"+"};

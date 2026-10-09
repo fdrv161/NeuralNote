@@ -71,6 +71,7 @@ NeuralNoteMainView::NeuralNoteMainView(NeuralNoteAudioProcessor& processor)
     _updateTooltipVisibility();
 
     setWantsKeyboardFocus(true);
+    setTitle("NeuralNote");
 
     updateEnablements();
 
@@ -194,6 +195,11 @@ bool NeuralNoteMainView::keyPressed(const KeyPress& key)
     }
 
     return false;
+}
+
+std::unique_ptr<AccessibilityHandler> NeuralNoteMainView::createAccessibilityHandler()
+{
+    return std::make_unique<AccessibilityHandler>(*this, AccessibilityRole::group);
 }
 
 void NeuralNoteMainView::updateEnablements()
