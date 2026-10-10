@@ -16,7 +16,9 @@
 
 Порядок для Claude:
 
-1. Если удалённого репозитория `upstream` ещё нет: `git remote add upstream https://github.com/DamRsn/NeuralNote.git`,
+1. Удалённый репозиторий `upstream` (автор) подключён 11.10.2026, отправка в него отключена.
+   Проверить: `git remote -v`. Если проект скачан заново и `upstream` нет:
+   `git remote add upstream https://github.com/DamRsn/NeuralNote.git`,
    затем `git remote set-url --push upstream DISABLED`, чтобы туда нельзя было отправить.
 2. `git fetch upstream`, посмотреть, что изменилось у автора: `git log --oneline a11y..upstream/main`
    и `git diff a11y...upstream/main --stat`. Коротко рассказать пользователю, что нового.
@@ -27,6 +29,13 @@
    должно быть имя (`setTitle`), до каждого можно дойти Tab, всё делается с клавиатуры.
 6. Отправить в `origin a11y`, дождаться сборки GitHub Actions, если упала, исправить.
 7. Попросить пользователя пройти контрольный список из раздела 4.
+8. Если всё работает, выпустить релиз (раздел 5).
+
+Ожидается у автора: ветка `upstream/resumable-transcriptions` (пауза и продолжение распознавания)
+меняет `TranscriptionProgress`, `StatusBar`, `NnToolbar`, `VisualizationPanel` и `TranscriptionManager`.
+После её выхода будут конфликты, а новой кнопке паузы нужны имя и озвучка состояния.
+Сообщение «Transcription stopped» в `NeuralNoteMainView::timerCallback` тогда надо разделить
+на «остановлено» и «на паузе».
 
 ## 3. Где лежит доступность
 
@@ -57,7 +66,8 @@
 - Панель моделей: `ModelDownloadPanel` (строки, стрелки, фокус при открытии, озвучка скачивания),
   возврат фокуса в `VisualizationPanel`.
 - Горячие клавиши главного окна: `NeuralNoteMainView::keyPressed` (в том числе перемотка Ctrl+стрелки).
-- Сборка: `.github/workflows/build.yml` (только Windows, только VST3, Vulkan). Автору не отправлять.
+- Сборка: `.github/workflows/build.yml` (только Windows, только VST3, Vulkan) и описание релиза
+  `.github/release-notes.md`. Автору не отправлять.
 
 ## 4. Контрольный список для проверки с NVDA
 
@@ -82,3 +92,20 @@
 10. Пробел запускает и останавливает воспроизведение, Shift+Пробел возвращает в начало.
 11. Меню Settings открывается, подменю и отметки читаются.
 12. Export MIDI out: открывается окно сохранения файла, после сохранения фокус возвращается в плагин.
+
+## 5. Выпуск релиза
+
+Сборки в Actions удаляются через 7 дней, релиз хранится всегда. Релиз создаётся сам, когда на
+GitHub отправлен тег вида `v<версия автора>-a11y.<номер>`, например `v2.0.0-a11y.1`.
+Версия автора — в первой строке `project(... VERSION ...)` файла `CMakeLists.txt`.
+Номер после `a11y.` растёт с каждой нашей сборкой на той же версии автора и сбрасывается
+на 1 при новой версии.
+
+Команды (номер тега каждый раз новый):
+
+1. `git -C "D:\a11y neuralnote\NeuralNote" tag v2.0.0-a11y.1 a11y`
+2. `git -C "D:\a11y neuralnote\NeuralNote" push origin v2.0.0-a11y.1`
+
+Через 20–30 минут релиз появится на https://github.com/fdrv161/NeuralNote/releases
+Перед выпуском проверить, что `.github/release-notes.md` описывает то, что есть в сборке
+(клавиши, изменения). Если шаг Publish release упал, прочитать его ошибку и исправить.
