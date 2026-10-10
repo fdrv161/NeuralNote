@@ -29,10 +29,11 @@ public:
         and the format has no variable-width part, so it does not depend on the current time. */
     static int getIdealWidth();
 
+    /** @return inSeconds as `mm:ss.dd`, the way the display shows it. */
+    static juce::String formatTime(double inSeconds);
+
 private:
     void _onVBlankCallback();
-
-    static juce::String _format(double inSeconds);
 
     NeuralNoteAudioProcessor* mProcessor;
 
