@@ -91,6 +91,9 @@ private:
         bool isInstalled = false;
         bool isInUse = false;
 
+        // How many quarters of the running download have been spoken, so each is said once.
+        int announcedQuarters = 0;
+
         // The row's background; everything else in it is laid out inside this.
         juce::Rectangle<int> bounds;
     };
@@ -110,6 +113,12 @@ private:
     void _pickRow(int inRow);
 
     void _focusRow(int inRow);
+
+    /**
+     * Speaks a download's milestones and its end, which the screen reader would otherwise only
+     * hear on coming back to the row. Called before the row takes inStatus on.
+     */
+    void _announceDownload(Row& inRow, const ModelDownloader::Status& inStatus, bool inIsInstalled);
 
     /** The row's name, size and state, for a screen reader; the tick is its toggle state. */
     juce::String _describeRow(const Row& inRow) const;
