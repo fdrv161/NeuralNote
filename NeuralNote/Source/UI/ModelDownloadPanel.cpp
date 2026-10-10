@@ -214,6 +214,8 @@ bool ModelDownloadPanel::_updateRows(bool inForce)
                   || (status.downloadedBytes > 0) != (shown.downloadedBytes > 0)
                   || status.errorMessage != shown.errorMessage;
 
+        _announceDownload(*row, status, is_installed);
+
         row->status = std::move(status);
         row->isInstalled = is_installed;
         row->isInUse = is_in_use;
@@ -235,7 +237,17 @@ bool ModelDownloadPanel::_updateRows(bool inForce)
                                       : status.downloadedBytes > 0                   ? "Resume "
                                                                                      : "Download ")
                                      + juce::String(modelSizeToDisplayName(row->modelSize)));
-        row->downloadButton.setVisible(!row->isInstalled && !status.isBusy());
+        const bool show_download = !row->isInstalled && !status.isBusy();
+        const bool show_cancel = !row->isInstalled && status.phase == ModelDownloader::Phase::Downloading;
+
+        // A button that hides while it has the focus would drop it on the panel, so it goes to the
+        // row instead, whose name says what happened.
+        if ((!show_download && row->downloadButton.hasKeyboardFocus(false))
+            || (!show_cancel && row->cancelButton.hasKeyboardFocus(false))) {
+            row->item.grabKeyboardFocus();
+        }
+
+        row->downloadButton.setVisible(show_download);
 
         const juce::String description = _describeRow(*row);
 
@@ -247,7 +259,7 @@ bool ModelDownloadPanel::_updateRows(bool inForce)
             row->item.setToggleState(row->isInUse, juce::dontSendNotification);
             nn::a11y::notifyToggleStateChanged(row->item);
         }
-        row->cancelButton.setVisible(!row->isInstalled && status.phase == ModelDownloader::Phase::Downloading);
+        row->cancelButton.setVisible(show_cancel);
     }
 
     // A relabelled button is a resized one.
@@ -605,5 +617,43 @@ void ModelDownloadPanel::RowItem::focusGained(FocusChangeType inCause)
     if (mOwner.mHoveredRow != mRow) {
         mOwner.mHoveredRow = mRow;
         mOwner.repaint();
+    }
+}
+
+void ModelDownloadPanel::_announceDownload(Row& inRow,
+                                           const ModelDownloader::Status& inStatus,
+                                           bool inIsInstalled)
+{
+    const ModelDownloader::Status& shown = inRow.status;
+    const juce::String name = modelSizeToDisplayName(inRow.modelSize);
+    juce::String message;
+
+    if (inStatus.phase == ModelDownloader::Phase::Downloading) {
+        if (shown.phase != ModelDownloader::Phase::Downloading) {
+            // A resumed download starts its count from where it already is, so it is not spoken.
+            inRow.announcedQuarters = percentOf(inStatus) / 25;
+        }
+
+        const int quarters = percentOf(inStatus) / 25;
+
+        if (quarters > inRow.announcedQuarters && quarters < 4) {
+            inRow.announcedQuarters = quarters;
+            message = name + ", " + juce::String(quarters * 25) + "%";
+        }
+    } else if (shown.isBusy() && !inStatus.isBusy()) {
+        if (inIsInstalled) {
+            message = name + " model downloaded";
+        } else if (inStatus.phase == ModelDownloader::Phase::Failed) {
+            message = name + " download failed: " + inStatus.errorMessage;
+        } else {
+            message = name + " download stopped";
+        }
+    }
+
+    // Through the window rather than the panel: the panel may have been closed while it downloaded.
+    if (message.isNotEmpty()) {
+        if (auto* window = getTopLevelComponent()) {
+            nn::a11y::announce(*window, message);
+        }
     }
 }
