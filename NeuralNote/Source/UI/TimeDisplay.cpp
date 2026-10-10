@@ -61,8 +61,8 @@ void TimeDisplay::_onVBlankCallback()
 {
     const double duration = mProcessor->getSourceAudioManager()->getAudioSampleDuration();
 
-    const juce::String position = _format(mProcessor->getPlayer()->getPlayheadPositionSeconds());
-    const juce::String total = duration > 0.0 ? _format(duration) : juce::String("--:--.--");
+    const juce::String position = formatTime(mProcessor->getPlayer()->getPlayheadPositionSeconds());
+    const juce::String total = duration > 0.0 ? formatTime(duration) : juce::String("--:--.--");
 
     if (position != mPosition || total != mTotal) {
         mPosition = position;
@@ -71,7 +71,7 @@ void TimeDisplay::_onVBlankCallback()
     }
 }
 
-juce::String TimeDisplay::_format(double inSeconds)
+juce::String TimeDisplay::formatTime(double inSeconds)
 {
     const int hundredths = juce::jmax(0, juce::roundToInt(inSeconds * 100.0));
 

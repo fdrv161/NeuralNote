@@ -13,6 +13,7 @@
 #include "NnGlobalSettings.h"
 #include "NnLook.h"
 #include "PluginEditor.h"
+#include "TimeDisplay.h"
 
 namespace
 {
@@ -201,6 +202,15 @@ bool NeuralNoteMainView::keyPressed(const KeyPress& key)
         return true;
     }
 
+    // Clicking the waveform is the only other way to move the playhead. Ctrl keeps plain arrows
+    // for the faders, which pass Ctrl+arrows on to here.
+    if (key.getModifiers().isCtrlDown() && !key.getModifiers().isAltDown()
+        && (key.isKeyCode(KeyPress::leftKey) || key.isKeyCode(KeyPress::rightKey))) {
+        const double step = key.getModifiers().isShiftDown() ? 5.0 : 1.0;
+        _seekBy(key.isKeyCode(KeyPress::leftKey) ? -step : step);
+        return true;
+    }
+
     if (key == KeyPress('r', juce::ModifierKeys::noModifiers, 0)) {
         mTopBar.getRecordButton().triggerClick();
         return true;
@@ -227,6 +237,29 @@ bool NeuralNoteMainView::keyPressed(const KeyPress& key)
 std::unique_ptr<AccessibilityHandler> NeuralNoteMainView::createAccessibilityHandler()
 {
     return std::make_unique<AccessibilityHandler>(*this, AccessibilityRole::group);
+}
+
+void NeuralNoteMainView::_seekBy(double inSeconds)
+{
+    if (!mProcessor.canPlay()) {
+        nn::a11y::announce(*this, "No audio to play");
+        return;
+    }
+
+    Player* player = mProcessor.getPlayer();
+    const double duration = mProcessor.getSourceAudioManager()->getAudioSampleDuration();
+    const double current = player->getPlayheadPositionSeconds();
+
+    // The player refuses the very end of the audio, so the last stop is a hundredth before it.
+    const double target = std::clamp(current + inSeconds, 0.0, std::max(0.0, duration - 0.01));
+
+    // Already at that end: nothing moved, so nothing is said.
+    if (std::abs(target - current) < 0.005) {
+        return;
+    }
+
+    player->setPlayheadPositionSeconds(target);
+    nn::a11y::announce(*this, TimeDisplay::formatTime(target));
 }
 
 void NeuralNoteMainView::updateEnablements()

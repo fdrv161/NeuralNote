@@ -60,6 +60,9 @@ private:
     /** Shows or hides the instrument picker, and lights the "+" to match. */
     void _setInstrumentMenuOpen(bool inIsOpen);
 
+    /** Moves the playhead by inSeconds, stopping at either end, and speaks where it landed. */
+    void _seekBy(double inSeconds);
+
     NeuralNoteAudioProcessor& mProcessor;
 
     State mPrevState = EmptyAudioAndMidiRegions;
