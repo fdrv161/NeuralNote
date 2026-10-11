@@ -1,0 +1,90 @@
+name: Release from last build
+
+# Publishes the newest successful build of the a11y branch as a GitHub release, without building
+# again. Run it from the Actions tab: "Release from last build", "Run workflow", enter the tag.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag, e.g. v2.0.0-a11y.1"
+        required: true
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Find the last build of a11y
+        id: build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-a11y\.[0-9]+$ ]]; then
+            echo "::error::Tag must look like v2.0.0-a11y.1, got: $TAG"
+            exit 1
+          fi
+
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "::error::Release $TAG already exists. Use the next number."
+            exit 1
+          fi
+
+          head_sha=$(gh api "repos/$GITHUB_REPOSITORY/branches/a11y" --jq .commit.sha)
+          run=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow build.yml --branch a11y \
+                --status success --limit 1 --json databaseId,headSha --jq '.[0]')
+          run_id=$(echo "$run" | jq -r '.databaseId // empty')
+          run_sha=$(echo "$run" | jq -r '.headSha // empty')
+
+          if [ -z "$run_id" ]; then
+            echo "::error::No successful build of a11y found. Run the Build workflow first."
+            exit 1
+          fi
+
+          # A release must hold the code the branch has now. Commits after the build may only touch
+          # the files the Build workflow ignores (the same list as its paths-ignore).
+          if [ "$run_sha" != "$head_sha" ]; then
+            compare=$(gh api "repos/$GITHUB_REPOSITORY/compare/${run_sha}...${head_sha}")
+            other=$(echo "$compare" | jq -r '.files[].filename'                     | grep -v -x -F -e ACCESSIBILITY.md -e .github/release-notes.md -e .github/workflows/release.yml || true)
+
+            if [ "$(echo "$compare" | jq -r .status)" != "ahead" ] || [ -n "$other" ]; then
+              echo "::error::The last successful build is of older code. Wait for the current build to finish, or run Build."
+              exit 1
+            fi
+          fi
+
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "sha=$head_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout release notes
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.build.outputs.sha }}
+          sparse-checkout: .github/release-notes.md
+          sparse-checkout-cone-mode: false
+
+      - name: Download the build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Builds are kept for 7 days; an older one is gone and has to be rebuilt.
+          if ! gh run download "${{ steps.build.outputs.run_id }}" --repo "$GITHUB_REPOSITORY" \
+               --name NeuralNote-VST3-Windows-x64 --dir dist; then
+            echo "::error::The build has expired (kept 7 days). Run the Build workflow, then this one again."
+            exit 1
+          fi
+
+      # The tag is created by the release itself, with the workflow's token, so it does not start
+      # another build.
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          ZIP="NeuralNote-${TAG}-VST3-Windows-x64.zip"
+          (cd dist && zip -r -q "../${ZIP}" .)
+          gh release create "$TAG" "$ZIP" --repo "$GITHUB_REPOSITORY" --target "${{ steps.build.outputs.sha }}" --title "NeuralNote ${TAG}: accessible build for NVDA" --notes-file .github/release-notes.md

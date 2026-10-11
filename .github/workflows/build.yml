@@ -3,6 +3,12 @@ name: Build (Windows x64)
 on:
   push:
     branches: [a11y]
+    # Notes and the release workflow do not change the plugin, so they need no new build.
+    # (Path filters are ignored for tag pushes, so tags still build.)
+    paths-ignore:
+      - ACCESSIBILITY.md
+      - .github/release-notes.md
+      - .github/workflows/release.yml
     # A tag like v2.0.0-a11y.1 also publishes the build as a release (see the release job).
     tags: ['v*-a11y*']
   workflow_dispatch:
