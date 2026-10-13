@@ -15,6 +15,7 @@ namespace
 {
 const juce::String LOADING_CAPTION = "LOADING MODEL";
 const juce::String TRANSCRIBING_CAPTION = "TRANSCRIBING";
+const juce::String PAUSED_CAPTION = "PAUSED";
 constexpr float CAPTION_TRACKING = 0.06f;
 
 constexpr float BAR_CORNER = 2.0f;
@@ -29,10 +30,10 @@ int captionWidth(const juce::String& inCaption)
     return static_cast<int>(std::ceil(nn::trackedTextWidth(inCaption, nn::fonts::statusBar(), CAPTION_TRACKING)));
 }
 
-/** Room for the wider caption, so the group does not change size when the phase does. */
+/** Room for the widest caption, so the group does not change size when the phase does. */
 int captionSlotWidth()
 {
-    return std::max(captionWidth(LOADING_CAPTION), captionWidth(TRANSCRIBING_CAPTION));
+    return std::max({captionWidth(LOADING_CAPTION), captionWidth(TRANSCRIBING_CAPTION), captionWidth(PAUSED_CAPTION)});
 }
 
 /** Rounded to a hundredth, so a pulse that has barely moved does not force a repaint. */
@@ -49,20 +50,22 @@ TranscriptionProgress::TranscriptionProgress(NeuralNoteAudioProcessor& inProcess
     : mProcessor(inProcessor)
     , mVBlankAttachment(this, [this]() { _onVBlankCallback(); })
 {
-    mCancelButton.setIcon(nn::icons::crossStroked, NnFlatButton::IconStyle::stroked, nn::metrics::cancelGlyphSize);
-    mCancelButton.setCornerRadius(4.0f);
-    mCancelButton.setTooltip(NeuralNoteTooltips::cancel_transcription);
-    mCancelButton.setTitle("Cancel transcription");
+    mPauseResumeButton.setCornerRadius(4.0f);
+    _updateButton(false);
 
-    // Not guarded on mIsCancelling: cancelling is idempotent, and a button that stops responding to
+    // Not guarded on mIsCancelling: pausing is idempotent, and a button that stops responding to
     // the second click is a button the user has to assume is broken.
-    mCancelButton.onClick = [this] {
+    mPauseResumeButton.onClick = [this] {
+        auto* manager = mProcessor.getTranscriptionManager();
+
         if (mProcessor.getState() == Processing) {
-            mProcessor.getTranscriptionManager()->cancelTranscription();
+            manager->pauseTranscription();
+        } else if (mProcessor.getState() == Paused) {
+            manager->resumeTranscription();
         }
     };
 
-    addAndMakeVisible(mCancelButton);
+    addAndMakeVisible(mPauseResumeButton);
 
     // A Tab stop while a transcription runs, so a screen reader can read how far it has got.
     setTitle("Transcription progress");
@@ -102,7 +105,7 @@ std::unique_ptr<juce::AccessibilityHandler> TranscriptionProgress::createAccessi
         juce::AccessibilityHandler::Interfaces {std::make_unique<ValueInterface>(*this)});
 }
 
-void TranscriptionProgress::_announceProgress()
+void TranscriptionProgress::_announceProgress(bool inIsFirstFrame)
 {
     // Only the bar shows the progress, and a screen reader stays silent about a progress bar that
     // does not have the focus, so the milestones are spoken instead.
@@ -110,12 +113,33 @@ void TranscriptionProgress::_announceProgress()
         return;
     }
 
+    if (mIsPaused) {
+        // A run already paused when the window opens was not just paused, so it is not said.
+        if (!mHasAnnouncedPause && !inIsFirstFrame) {
+            nn::a11y::announce(*this, "Transcription paused");
+        }
+
+        mHasAnnouncedPause = true;
+        return;
+    }
+
+    // Resumed: the phase is said again, so the user hears the run is going.
+    const bool is_resumed = mHasAnnouncedPause;
+
+    if (is_resumed) {
+        mHasAnnouncedPause = false;
+        mHasAnnouncedPhase = false;
+    }
+
     if (!mHasAnnouncedPhase || mAnnouncedPhase != mDisplayedPhase) {
         mHasAnnouncedPhase = true;
         mAnnouncedPhase = mDisplayedPhase;
-        mAnnouncedTenths = 0;
-        nn::a11y::announce(*this,
-                           mDisplayedPhase == MuscriptorEngine::Phase::LoadingModel ? "Loading model" : "Transcribing");
+        // A resumed run is already part way; only the tenths still to come are spoken.
+        mAnnouncedTenths = juce::jmax(0, mDisplayedPercent) / 10;
+
+        const juce::String phase =
+            mDisplayedPhase == MuscriptorEngine::Phase::LoadingModel ? "Loading model" : "Transcribing";
+        nn::a11y::announce(*this, is_resumed ? "Resumed, " + phase.toLowerCase() : phase);
         return;
     }
 
@@ -130,7 +154,9 @@ void TranscriptionProgress::_announceProgress()
 
 juce::String TranscriptionProgress::_getProgressText() const
 {
-    juce::String text = mDisplayedPhase == MuscriptorEngine::Phase::LoadingModel ? "Loading model" : "Transcribing";
+    juce::String text = mIsPaused                                                 ? "Paused"
+                        : mDisplayedPhase == MuscriptorEngine::Phase::LoadingModel ? "Loading model"
+                                                                                   : "Transcribing";
 
     if (mDisplayedPercent >= 0) {
         text << ", " << mDisplayedPercent << "%";
@@ -143,6 +169,17 @@ juce::String TranscriptionProgress::_getProgressText() const
     return text;
 }
 
+void TranscriptionProgress::_updateButton(bool inIsPaused)
+{
+    mPauseResumeButton.setIcon(inIsPaused ? nn::icons::play : nn::icons::pause,
+                               NnFlatButton::IconStyle::filled,
+                               static_cast<float>(nn::metrics::pauseResumeGlyphSize));
+    mPauseResumeButton.setTooltip(inIsPaused ? NeuralNoteTooltips::resume_transcription
+                                             : NeuralNoteTooltips::pause_transcription);
+    // The icon alone says which it is; a screen reader needs it in the name.
+    mPauseResumeButton.setTitle(inIsPaused ? "Resume transcription" : "Pause transcription");
+}
+
 int TranscriptionProgress::getIdealWidth()
 {
     return captionSlotWidth() + nn::metrics::progressBarWidth + nn::metrics::progressPctWidth
@@ -151,9 +188,9 @@ int TranscriptionProgress::getIdealWidth()
 
 void TranscriptionProgress::resized()
 {
-    mCancelButton.setBounds(getLocalBounds()
-                                .removeFromRight(nn::metrics::cancelHitSize)
-                                .withSizeKeepingCentre(nn::metrics::cancelHitSize, nn::metrics::cancelHitSize));
+    mPauseResumeButton.setBounds(getLocalBounds()
+                                     .removeFromRight(nn::metrics::cancelHitSize)
+                                     .withSizeKeepingCentre(nn::metrics::cancelHitSize, nn::metrics::cancelHitSize));
 }
 
 void TranscriptionProgress::paint(juce::Graphics& g)
@@ -169,10 +206,12 @@ void TranscriptionProgress::paint(juce::Graphics& g)
 
     g.setColour(nn::colours::progressText.withMultipliedAlpha(alpha));
     nn::drawTrackedText(g,
-                        loading ? LOADING_CAPTION : TRANSCRIBING_CAPTION,
+                        mIsPaused ? PAUSED_CAPTION
+                        : loading ? LOADING_CAPTION
+                                  : TRANSCRIBING_CAPTION,
                         nn::fonts::statusBar(),
                         row.removeFromLeft(captionSlotWidth()).toFloat(),
-                        juce::Justification::centredLeft,
+                        juce::Justification::centredRight,
                         CAPTION_TRACKING);
 
     row.removeFromLeft(nn::metrics::progressGap);
@@ -207,32 +246,58 @@ void TranscriptionProgress::paint(juce::Graphics& g)
 
 void TranscriptionProgress::_onVBlankCallback()
 {
-    if (mProcessor.getState() != Processing) {
+    const State state = mProcessor.getState();
+
+    if (state != Processing && state != Paused) {
         // The run is over: drop the progress and the pulse, so the next one starts fresh.
+        if (mIsPaused) {
+            _updateButton(false);
+        }
+
         mIsCancelling = false;
+        mIsPaused = false;
         mDisplayedPhase = MuscriptorEngine::Phase::LoadingModel;
         mDisplayedPercent = -1;
         mPulse = 1.0f;
         mHasAnnouncedPhase = false;
+        mHasAnnouncedPause = false;
         mAnnouncedTenths = 0;
+        mWasUnfinished = false;
         return;
     }
 
+    const bool is_first_frame = !mWasUnfinished;
+    mWasUnfinished = true;
+
     const auto* manager = mProcessor.getTranscriptionManager();
-    const auto progress = manager->getTranscriptionProgress();
+    const bool is_paused = state == Paused;
+
+    const MuscriptorEngine::Progress progress = manager->getTranscriptionProgress();
+    float pulse = pulseAt(static_cast<double>(juce::Time::getMillisecondCounter()));
+    bool is_cancelling = manager->isCancelRequested();
+
+    // Nothing is running, so the bar holds still.
+    if (is_paused) {
+        pulse = 1.0f;
+        is_cancelling = false;
+    }
+
     const int percent = progress.fraction < 0.0f ? -1 : juce::roundToInt(100.0f * progress.fraction);
-    const float pulse = pulseAt(static_cast<double>(juce::Time::getMillisecondCounter()));
-    const bool is_cancelling = manager->isCancelRequested();
+
+    if (is_paused != mIsPaused) {
+        _updateButton(is_paused);
+    }
 
     if (progress.phase == mDisplayedPhase && percent == mDisplayedPercent && juce::approximatelyEqual(pulse, mPulse)
-        && is_cancelling == mIsCancelling) {
+        && is_cancelling == mIsCancelling && is_paused == mIsPaused) {
         return;
     }
 
     // The pulse alone is only animation; anything else is news for a screen reader.
-    const bool reading_changed =
-        progress.phase != mDisplayedPhase || percent != mDisplayedPercent || is_cancelling != mIsCancelling;
+    const bool reading_changed = progress.phase != mDisplayedPhase || percent != mDisplayedPercent
+                                 || is_cancelling != mIsCancelling || is_paused != mIsPaused;
 
+    mIsPaused = is_paused;
     mIsCancelling = is_cancelling;
     mDisplayedPhase = progress.phase;
     mDisplayedPercent = percent;
@@ -244,6 +309,6 @@ void TranscriptionProgress::_onVBlankCallback()
             handler->notifyAccessibilityEvent(juce::AccessibilityEvent::valueChanged);
         }
 
-        _announceProgress();
+        _announceProgress(is_first_frame);
     }
 }

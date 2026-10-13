@@ -32,6 +32,16 @@ juce::File getRecordingsDirectory()
     return getNeuralNoteDirectory().getChildFile("recordings");
 }
 
+juce::File getCrashReportsDirectory()
+{
+    return getNeuralNoteDirectory().getChildFile("crashes");
+}
+
+juce::File getLogsDirectory()
+{
+    return getNeuralNoteDirectory().getChildFile("logs");
+}
+
 juce::File getMidiDragDirectory()
 {
     return juce::File::getSpecialLocation(juce::File::SpecialLocationType::tempDirectory).getChildFile("neuralnote");
@@ -90,12 +100,10 @@ juce::File getModelPartFile(ModelSize inModelSize)
                                              + juce::String(entry.sha256).substring(0, 8) + ".part");
 }
 
-void openModelsDirectory()
+void openDirectory(const juce::File& inDirectory)
 {
-    const juce::File directory = getModelsDirectory();
-
-    if (ensureDirectoryExists(directory)) {
-        directory.startAsProcess();
+    if (ensureDirectoryExists(inDirectory)) {
+        inDirectory.startAsProcess();
     }
 }
 

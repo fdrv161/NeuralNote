@@ -13,7 +13,8 @@
 class NeuralNoteAudioProcessor;
 
 /**
- * What a running transcription looks like: a caption, a bar, a percentage and a way to stop.
+ * What an unfinished transcription looks like: a caption, a bar, a percentage, and a button that
+ * pauses it while it runs and resumes it once paused.
  *
  * Lives in the status bar and is never modal -- the roll fills in as the run goes, so nothing may
  * cover it.
@@ -39,19 +40,31 @@ private:
     /** The phase and percentage in words, as a screen reader reads the bar. */
     juce::String _getProgressText() const;
 
-    /** Speaks a phase change or each further tenth of the transcription, wherever the focus is. */
-    void _announceProgress();
+    /**
+     * Speaks a phase change, each further tenth of the transcription, a pause and a resume,
+     * wherever the focus is.
+     */
+    void _announceProgress(bool inIsFirstFrame);
+
+    /** Shows pause while running and resume while paused, and names the button to match. */
+    void _updateButton(bool inIsPaused);
 
     NeuralNoteAudioProcessor& mProcessor;
 
-    NnFlatButton mCancelButton {"CancelTranscription"};
+    NnFlatButton mPauseResumeButton {"PauseResumeTranscription"};
 
     juce::VBlankAttachment mVBlankAttachment;
 
-    // Mirrors the engine's pending request, from either this button or the toolbar's bin, so a second
-    // click does not read as the first one having done nothing. Cancellation cannot interrupt GPU
+    // Mirrors the engine's pending stop request, from either this button or the toolbar's bin, so a
+    // second click does not read as the first one having done nothing. Stopping cannot interrupt GPU
     // initialisation, which can take seconds.
     bool mIsCancelling = false;
+
+    bool mIsPaused = false;
+
+    // Whether the last frame already showed an unfinished run, so a paused run found on opening
+    // the window is not announced as if it had just been paused.
+    bool mWasUnfinished = false;
 
     MuscriptorEngine::Phase mDisplayedPhase = MuscriptorEngine::Phase::LoadingModel;
     // Negative while the phase has no measurable progress yet.
@@ -62,6 +75,7 @@ private:
     bool mHasAnnouncedPhase = false;
     MuscriptorEngine::Phase mAnnouncedPhase = MuscriptorEngine::Phase::LoadingModel;
     int mAnnouncedTenths = 0;
+    bool mHasAnnouncedPause = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TranscriptionProgress)
 };

@@ -4,6 +4,8 @@
 
 #include "CombinedAudioMidiRegion.h"
 
+#include "NnLogger.h"
+
 CombinedAudioMidiRegion::CombinedAudioMidiRegion(NeuralNoteAudioProcessor* processor, Keyboard& keyboard)
     : mProcessor(processor)
     , mKeyboard(keyboard)
@@ -45,7 +47,8 @@ bool CombinedAudioMidiRegion::isInterestedInFileDrag(const StringArray& files)
     const State state = mProcessor->getState();
 
     // Anything but a run in flight or a recording: dropping replaces whatever is loaded.
-    return state == EmptyAudioAndMidiRegions || state == AudioLoaded || state == PopulatedAudioAndMidiRegions;
+    return state == EmptyAudioAndMidiRegions || state == AudioLoaded || state == Paused
+           || state == PopulatedAudioAndMidiRegions;
 }
 
 void CombinedAudioMidiRegion::mouseWheelMove(const MouseEvent& event, const MouseWheelDetails& wheel)
@@ -97,6 +100,9 @@ void CombinedAudioMidiRegion::filesDropped(const StringArray& files, int x, int 
     } else {
         auto supported_format_string = mSupportedAudioFileExtensions.joinIntoString(", ");
 
+        NnLogger::write(NnLogger::Level::Warning,
+                        "CombinedAudioMidiRegion: Could not load the file: unsupported format ("
+                            + juce::File(files[0]).getFileExtension() + ").");
         juce::NativeMessageBox::showMessageBoxAsync(
             juce::MessageBoxIconType::NoIcon,
             "Could not load the file.",

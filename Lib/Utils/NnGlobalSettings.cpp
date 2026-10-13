@@ -19,6 +19,8 @@ namespace
     const char* TOOLTIPS_VISIBLE_KEY = "tooltipsVisible";
     const char* COMPUTE_DEVICE_KEY = "computeDevice";
     const char* COMPUTE_DEVICE_ORDINAL_KEY = "computeDeviceOrdinal";
+    const char* CRASH_REPORTS_ENABLED_KEY = "crashReportsEnabled";
+    const char* LOG_LEVEL_KEY = "logLevel";
 
     /**
      * Deleted by JUCE's own shutdown, while the message manager still exists: the file is a Timer,
@@ -72,6 +74,8 @@ namespace
         const ComputeDeviceChoice device = getComputeDevice();
         props.setValue(COMPUTE_DEVICE_KEY, juce::String(device.name));
         props.setValue(COMPUTE_DEVICE_ORDINAL_KEY, device.ordinal);
+        props.setValue(CRASH_REPORTS_ENABLED_KEY, getCrashReportsEnabled());
+        props.setValue(LOG_LEVEL_KEY, NnLogger::levelToString(getLogLevel()));
 
         props.save();
     }
@@ -91,6 +95,8 @@ ModelSize getModelSize()
 
 void setModelSize(ModelSize inModelSize)
 {
+    NnLogger::write(NnLogger::Level::Info,
+                    "NnGlobalSettings: model size: " + juce::String(modelSizeToString(inModelSize)));
     properties().setValue(MODEL_SIZE_KEY, modelSizeToString(inModelSize));
     _saveAllSettings();
 }
@@ -125,8 +131,34 @@ ComputeDeviceChoice getComputeDevice()
 
 void setComputeDevice(const ComputeDeviceChoice& inChoice)
 {
+    NnLogger::write(NnLogger::Level::Info,
+                    "NnGlobalSettings: compute device: "
+                        + (inChoice.isAuto() ? juce::String("auto")
+                                             : juce::String(inChoice.name) + " #" + juce::String(inChoice.ordinal)));
     properties().setValue(COMPUTE_DEVICE_KEY, juce::String(inChoice.name));
     properties().setValue(COMPUTE_DEVICE_ORDINAL_KEY, inChoice.ordinal);
+    _saveAllSettings();
+}
+
+bool getCrashReportsEnabled()
+{
+    return properties().getBoolValue(CRASH_REPORTS_ENABLED_KEY, false);
+}
+
+void setCrashReportsEnabled(bool inEnabled)
+{
+    properties().setValue(CRASH_REPORTS_ENABLED_KEY, inEnabled);
+    _saveAllSettings();
+}
+
+NnLogger::Level getLogLevel()
+{
+    return NnLogger::levelFromString(properties().getValue(LOG_LEVEL_KEY), NnLogger::Level::Info);
+}
+
+void setLogLevel(NnLogger::Level inLevel)
+{
+    properties().setValue(LOG_LEVEL_KEY, NnLogger::levelToString(inLevel));
     _saveAllSettings();
 }
 

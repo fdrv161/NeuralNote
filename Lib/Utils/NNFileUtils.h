@@ -32,6 +32,12 @@ juce::File getGlobalSettingsFile();
 /** <NeuralNote>/recordings. */
 juce::File getRecordingsDirectory();
 
+/** <NeuralNote>/crashes, where CrashReporter writes its minidumps. */
+juce::File getCrashReportsDirectory();
+
+/** <NeuralNote>/logs, where NnLogger writes. */
+juce::File getLogsDirectory();
+
 /** <temp>/neuralnote, for the file a MIDI drag hands the OS and nothing longer. */
 juce::File getMidiDragDirectory();
 
@@ -64,8 +70,8 @@ std::optional<ModelSize> getInstalledModelSize(ModelSize inPreferred);
  */
 juce::File getModelPartFile(ModelSize inModelSize);
 
-/** Opens the models directory in the file manager, creating it first. */
-void openModelsDirectory();
+/** Opens inDirectory in the file manager, creating it first. */
+void openDirectory(const juce::File& inDirectory);
 
 /** Whether inFile is a recording we wrote, and so ours to delete. */
 bool isRecordingFile(const juce::File& inFile);

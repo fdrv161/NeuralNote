@@ -8,6 +8,7 @@
 #include "NNFileUtils.h"
 #include "NnFonts.h"
 #include "NnIcons.h"
+#include "NnLogger.h"
 #include "NnLook.h"
 #include "PluginProcessor.h"
 
@@ -133,7 +134,8 @@ void NnToolbar::updateEnablements()
 
     // Not while recording: clearing would stop the recording behind the record button's back.
     const State state = mProcessor.getState();
-    mClearButton.setEnabled(state == AudioLoaded || state == Processing || state == PopulatedAudioAndMidiRegions);
+    mClearButton.setEnabled(state == AudioLoaded || state == Processing || state == Paused
+                            || state == PopulatedAudioAndMidiRegions);
 
     resized();
     repaint();
@@ -169,6 +171,7 @@ void NnToolbar::_exportMidiFile()
                                               overflow_mode);
 
             if (!success) {
+                NnLogger::write(NnLogger::Level::Error, "NnToolbar: Could not write the MIDI file.");
                 juce::NativeMessageBox::showMessageBoxAsync(
                     juce::MessageBoxIconType::NoIcon, "Error", "Could not write the MIDI file.");
             }
@@ -179,10 +182,11 @@ void NnToolbar::_clearOneStep()
 {
     switch (mProcessor.getState()) {
         case Processing:
-            // A cancelled run ends in clearTranscription(), so the audio stays for the next click.
-            mProcessor.getTranscriptionManager()->cancelTranscription();
+            // A discarded run ends in clearTranscription(), so the audio stays for the next click.
+            mProcessor.getTranscriptionManager()->discardTranscription();
             break;
 
+        case Paused:
         case PopulatedAudioAndMidiRegions:
             mProcessor.clearTranscription();
             break;

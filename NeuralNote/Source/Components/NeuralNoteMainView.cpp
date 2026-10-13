@@ -5,12 +5,14 @@
 #include "NeuralNoteMainView.h"
 
 #include "ComputeDevices.h"
+#include "CrashReporter.h"
 #include "MidiFileWriter.h"
 #include "NeuralNoteTooltips.h"
 #include "NNFileUtils.h"
 #include "NnAccessibility.h"
 #include "NnFonts.h"
 #include "NnGlobalSettings.h"
+#include "NnLogger.h"
 #include "NnLook.h"
 #include "PluginEditor.h"
 #include "TimeDisplay.h"
@@ -150,8 +152,9 @@ void NeuralNoteMainView::timerCallback()
 
     const State processor_state = mProcessor.getState();
 
-    // The progress is spoken as it goes; the end is spoken here, with what it produced.
-    const bool is_transcribing = processor_state == Processing;
+    // The progress is spoken as it goes, pausing and resuming included; the end is spoken here,
+    // with what it produced. A paused run is not over, so it does not count as an end.
+    const bool is_transcribing = processor_state == Processing || processor_state == Paused;
 
     if (mWasTranscribing && !is_transcribing) {
         if (processor_state == PopulatedAudioAndMidiRegions) {
@@ -423,6 +426,66 @@ void NeuralNoteMainView::_buildSettingsMenu()
     }
 
     mSettingsMenu->addSubMenu("MIDI export on channel overflow", overflow_menu);
+
+#if JUCE_WINDOWS
+    mSettingsMenu->addSeparator();
+
+    PopupMenu crash_menu;
+
+    auto crash_reports_item = PopupMenu::Item("Enable crash reports");
+    crash_reports_item.setID(++item_id);
+    crash_reports_item.setEnabled(true);
+    mSettingsMenuItemsShouldBeTicked.emplace_back(crash_reports_item.itemID,
+                                                  [] { return SharedResourcePointer<CrashReporter>()->isEnabled(); });
+    crash_reports_item.setTicked(mSettingsMenuItemsShouldBeTicked.back().second());
+    crash_reports_item.setAction([this] {
+        const SharedResourcePointer<CrashReporter> crash_reporter;
+        crash_reporter->setEnabled(!crash_reporter->isEnabled());
+        _refreshSettingsMenu();
+    });
+    crash_menu.addItem(crash_reports_item);
+
+    auto open_crash_reports_item = PopupMenu::Item("Open crash reports folder");
+    open_crash_reports_item.setID(++item_id);
+    open_crash_reports_item.setEnabled(true);
+    open_crash_reports_item.setAction([] { NNFileUtils::openDirectory(NNFileUtils::getCrashReportsDirectory()); });
+    crash_menu.addItem(open_crash_reports_item);
+
+    mSettingsMenu->addSubMenu("Crash reports", crash_menu);
+#endif
+
+    mSettingsMenu->addSeparator();
+
+    PopupMenu logs_menu;
+    PopupMenu log_level_menu;
+
+    for (const auto& [level, label]: {std::pair {NnLogger::Level::Debug, "Debug"},
+                                      std::pair {NnLogger::Level::Info, "Info"},
+                                      std::pair {NnLogger::Level::Warning, "Warning"},
+                                      std::pair {NnLogger::Level::Error, "Error"}}) {
+        auto level_item = PopupMenu::Item(label);
+        level_item.setID(++item_id);
+        level_item.setEnabled(true);
+        mSettingsMenuItemsShouldBeTicked.emplace_back(
+            level_item.itemID, [item_level = level] { return NnLogger::getLevel() == item_level; });
+        level_item.setTicked(mSettingsMenuItemsShouldBeTicked.back().second());
+        level_item.setAction([this, item_level = level] {
+            NnLogger::setLevel(item_level);
+            NnGlobalSettings::setLogLevel(item_level);
+            _refreshSettingsMenu();
+        });
+        log_level_menu.addItem(level_item);
+    }
+
+    logs_menu.addSubMenu("Log level", log_level_menu);
+
+    auto open_logs_item = PopupMenu::Item("Open logs folder");
+    open_logs_item.setID(++item_id);
+    open_logs_item.setEnabled(true);
+    open_logs_item.setAction([] { NNFileUtils::openDirectory(NNFileUtils::getLogsDirectory()); });
+    logs_menu.addItem(open_logs_item);
+
+    mSettingsMenu->addSubMenu("Logs", logs_menu);
 
     auto check_updates_item = PopupMenu::Item("Check for updates");
     check_updates_item.setID(++item_id);

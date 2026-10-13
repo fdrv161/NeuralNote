@@ -57,15 +57,47 @@ if test -z "$signingID"; then
 	exit 1
 fi
 
-read -p "Enter your Apple ID: " APPLE_USERNAME
+# APPLE_ID and APPLE_APP_PASSWORD in the environment skip the prompts.
+APPLE_ID=${APPLE_ID:-}
+APPLE_APP_PASSWORD=${APPLE_APP_PASSWORD:-}
+if [[ ! -t 0 && ( -z "$APPLE_ID" || -z "$APPLE_APP_PASSWORD" ) ]]; then
+	>&2 echo "Set APPLE_ID and APPLE_APP_PASSWORD when not running in a terminal"
+	exit 1
+fi
+if test -z "$APPLE_ID"; then
+	read -p "Enter your Apple ID: " APPLE_ID
+fi
 APPLE_TEAMID=$(echo "$signingID" | cut -d'(' -f2 | cut -d')' -f1)
 if test -z "$APPLE_TEAMID"; then
 	read -p "Enter your Apple Team ID: " APPLE_TEAMID
 fi
-read -s -p "Enter your Apple ID password (App specific): " APPLE_PASSWORD
-echo
+if test -z "$APPLE_APP_PASSWORD"; then
+	read -s -p "Enter your Apple ID password (App specific): " APPLE_APP_PASSWORD
+	echo
+fi
 
 chmod +x "$PLUG_DIR"/{Standalone/NeuralNote.app,AU/NeuralNote.component,VST3/NeuralNote.vst3}/Contents/MacOS/NeuralNote
+
+# Crash reports are read against the dSYMs, so each must match its binary before the binary is
+# stripped, and they are kept beside the installer.
+echo "Stripping Standalone, AU and VST3"
+for bundle in Standalone/NeuralNote.app AU/NeuralNote.component VST3/NeuralNote.vst3; do
+	binary=$PLUG_DIR/$bundle/Contents/MacOS/NeuralNote
+	dsym=$PLUG_DIR/$bundle.dSYM
+
+	if [[ "$(dwarfdump --uuid "$binary" | awk '{print $2, $3}')" != "$(dwarfdump --uuid "$dsym" | awk '{print $2, $3}')" ]]; then
+		>&2 echo "$dsym is missing or does not match $binary: build Release with NEURALNOTE_SYMBOLS=ON"
+		exit 1
+	fi
+
+	strip -S -x "$binary"
+done
+
+SYMBOLS_ZIP=$PWD/${PKG%.pkg}_dSYMs.zip
+mkdir -p "$(dirname "$SYMBOLS_ZIP")"
+rm -f "$SYMBOLS_ZIP"
+(cd "$PLUG_DIR" && zip -qr "$SYMBOLS_ZIP" Standalone/NeuralNote.app.dSYM AU/NeuralNote.component.dSYM VST3/NeuralNote.vst3.dSYM)
+echo "dSYMs saved to $SYMBOLS_ZIP"
 
 echo "Signing Standalone, AU and VST3"
 codesign --remove-signature "$PLUG_DIR"/{Standalone/NeuralNote.app,AU/NeuralNote.component,VST3/NeuralNote.vst3} || true
@@ -95,5 +127,5 @@ rm -r "$UNSIGNED_DIR"
 
 # Notarize the pkg and staple it
 echo "Notarize and staple installer"
-xcrun notarytool submit --apple-id "$APPLE_USERNAME" --team-id "$APPLE_TEAMID" --password "$APPLE_PASSWORD" --wait "$PKG"
+xcrun notarytool submit --apple-id "$APPLE_ID" --team-id "$APPLE_TEAMID" --password "$APPLE_APP_PASSWORD" --wait "$PKG"
 xcrun stapler staple "$PKG"
