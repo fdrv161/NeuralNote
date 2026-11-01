@@ -1,10 +1,10 @@
 # NeuralNote <img align="right" src="NeuralNote/Assets/Logo/neuralnote-1024.png" width="100" />
 
 NeuralNote is the audio plugin that brings **state-of-the-art audio-to-MIDI transcription** into your favorite Digital
-Audio Workstation. See the [website](https://damrsn.github.io/NeuralNote/).
+Audio Workstation. See the [website](https://neuralnote.co/).
 
 > [!NOTE]
-> 🎉 **NeuralNote v2 is out!** Download it from the [website](https://damrsn.github.io/NeuralNote/#download) or the [releases page](https://github.com/DamRsn/NeuralNote/releases).
+> 🎉 **NeuralNote v2 is out!** Download it from the [website](https://neuralnote.co/#download) or the [releases page](https://github.com/DamRsn/NeuralNote/releases).
 >
 > Testing so far covers only a few machines and GPUs. Whether something breaks or works great on your hardware,
 > please tell us in [GitHub issues](https://github.com/DamRsn/NeuralNote/issues) (see [Hardware](#models-and-performance)).
@@ -28,12 +28,11 @@ Audio Workstation. See the [website](https://damrsn.github.io/NeuralNote/).
 
 ## Install
 
-Download the latest release for your platform from the [website](https://damrsn.github.io/NeuralNote/#download) or 
+Download the latest release for your platform from the [website](https://neuralnote.co/#download) or 
 [releases page](https://github.com/DamRsn/NeuralNote/releases).
 
-- **macOS (Apple Silicon):** `NeuralNote_Installer_Mac_arm64.pkg` installs the Standalone app, VST3 and AU. It is
-  signed and notarized. An installer for Intel Macs will come later. In the meantime, you can
-  [build from source](#build-from-source).
+- **macOS:** `NeuralNote_Installer_Mac_arm64.pkg` for Apple Silicon, `NeuralNote_Installer_Mac_x64.pkg` for Intel Macs.
+  Both install the Standalone app, VST3 and AU, and are signed and notarized.
 - **Windows (x64):** `NeuralNote_Installer_Windows_x64.exe` installs the Standalone app and VST3. It is not code signed,
   so Windows may warn you before running it for the first time.
 - **Linux:** prebuilt binaries are coming soon. In the meantime, you can [build from source](#build-from-source).
@@ -47,7 +46,7 @@ NeuralNote is a simple AudioFX plugin (VST®3/AU/Standalone app) that you apply 
 
 - Gather some audio:
   - Click record. This works both when recording live and when playing the track in your DAW.
-  - Or drop an audio file on the plugin (.wav, .aiff, .flac, .mp3 and .ogg (vorbis) are supported).
+  - Or drop an audio file on the plugin (.wav, .aiff, .flac, .mp3, .ogg (vorbis) and, on macOS, .m4a are supported).
 - Select the instruments to transcribe in the left panel, or select `Automatic` to let the model detect them.
   - Transcriptions tend to be better when the model is given the correct set of instruments.
 - Click `Transcribe`. The transcription runs in the background, and the MIDI fills into the piano roll as it is
@@ -178,7 +177,6 @@ public API. The GGUF weights it loads are available on
 ## Roadmap
 
 - Prebuilt binaries for Linux
-- Installer for Intel Macs
 - MIDI out, with per-instrument channel selection
 - CLI
 - Performance optimizations
