@@ -46,7 +46,7 @@ jobs:
           fi
 
           # A release must hold the code the branch has now. Commits after the build may only touch
-          # the files the Build workflow ignores (the same list as its paths-ignore).
+          # these notes, which do not change the plugin.
           if [ "$run_sha" != "$head_sha" ]; then
             compare=$(gh api "repos/$GITHUB_REPOSITORY/compare/${run_sha}...${head_sha}")
             other=$(echo "$compare" | jq -r '.files[].filename'                     | grep -v -x -F -e ACCESSIBILITY.md -e .github/release-notes.md -e .github/workflows/release.yml || true)
