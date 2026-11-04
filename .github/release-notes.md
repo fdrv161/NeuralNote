@@ -7,6 +7,8 @@ Unofficial build of [NeuralNote](https://github.com/DamRsn/NeuralNote) by Damien
 - The status line, the time display and the transcription progress can be read.
 - Transcription progress, pausing and resuming it, its end, and model download progress are spoken wherever the focus is.
 - Ctrl+Left/Right moves the playhead by 1 second, Ctrl+Shift+Left/Right by 5 seconds.
+- Sliders read with units. Arrows move by one step, Page Up and Page Down by ten, Home goes to the maximum and End to the minimum.
+- Shortcuts, Clear, loading a file, MIDI export and update checks say their result.
 
 Other keys in the main window: Space plays or pauses, Shift+Space goes back to the start, R records, M mutes the input, L toggles loop, C toggles follow playhead, Shift+Backspace clears.
 
@@ -28,6 +30,7 @@ Windows x64, VST3 only. GPU transcription uses Vulkan, and the compute device ca
 - Все элементы подписаны и доступны по Tab. Выбор инструментов и моделей работает стрелками, пробелом и Escape.
 - Озвучиваются ход распознавания, пауза и продолжение, окончание и скачивание модели.
 - Ctrl+стрелки влево и вправо перематывают на 1 секунду, с Shift на 5 секунд.
+- Ползунки читаются с единицами. Page Up и Page Down двигают на 10 шагов, Home ставит максимум, End минимум.
 
 Установка: распакуйте zip, скопируйте папку `NeuralNote.vst3` в `C:\Program Files\Common Files\VST3`, пересканируйте плагины в DAW. Модель скачивается в самом плагине кнопкой Model.
 
