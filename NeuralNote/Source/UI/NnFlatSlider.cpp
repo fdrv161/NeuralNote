@@ -53,9 +53,9 @@ bool NnFlatSlider::keyPressed(const juce::KeyPress& inKey)
     } else if (inKey == juce::KeyPress::pageDownKey) {
         new_value -= 10.0 * step;
     } else if (inKey == juce::KeyPress::homeKey) {
-        new_value = getMinimum();
-    } else if (inKey == juce::KeyPress::endKey) {
         new_value = getMaximum();
+    } else if (inKey == juce::KeyPress::endKey) {
+        new_value = getMinimum();
     } else {
         return juce::Slider::keyPressed(inKey);
     }

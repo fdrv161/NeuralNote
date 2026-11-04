@@ -37,7 +37,7 @@ public:
     void paint(juce::Graphics& g) override;
 
     /**
-     * Arrows move by one step, Page Up and Page Down by ten, Home and End go to the ends.
+     * Arrows move by one step, Page Up and Page Down by ten, Home goes to the maximum and End to the minimum.
      * JUCE's own step is the value's precision, which on a fine range takes hundreds of presses.
      */
     bool keyPressed(const juce::KeyPress& inKey) override;
