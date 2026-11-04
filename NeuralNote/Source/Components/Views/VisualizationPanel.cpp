@@ -50,7 +50,14 @@ VisualizationPanel::VisualizationPanel(NeuralNoteAudioProcessor* processor)
     mTranscribeButton.setColour(NnFlatButton::iconColourId, nn::colours::ctaText);
     mTranscribeButton.setColour(NnFlatButton::textColourId, nn::colours::ctaText);
     mTranscribeButton.setTooltip(NeuralNoteTooltips::transcribe);
-    mTranscribeButton.onClick = [this] { mProcessor->getTranscriptionManager()->startTranscription(); };
+    mTranscribeButton.onClick = [this] {
+        mProcessor->getTranscriptionManager()->startTranscription();
+
+        // The button is about to hide. Left to itself the focus would land on Clear, where a second
+        // Return would discard the run.
+        mStatusBar.updateEnablements();
+        mStatusBar.focusProgress();
+    };
     addChildComponent(mTranscribeButton);
 
     mModelDownloadPanel.onInstalledModelsChanged = [this] { _layOutTranscribeButton(); };

@@ -37,6 +37,9 @@ public:
     /** Re-derives whether the progress group is showing. */
     void updateEnablements();
 
+    /** Moves the keyboard focus to the progress group, if it is showing. */
+    void focusProgress();
+
     /** Called with the slider's normalised position whenever the user moves it. */
     std::function<void(float)> onVerticalZoomChange;
 

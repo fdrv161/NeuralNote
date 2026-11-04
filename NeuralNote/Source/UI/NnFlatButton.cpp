@@ -84,6 +84,32 @@ void NnFlatButton::enablementChanged()
 {
     setMouseCursor(isEnabled() ? juce::MouseCursor::PointingHandCursor : juce::MouseCursor::NormalCursor);
     repaint();
+
+    // JUCE drops the focus right after this call, which would leave the plugin with none at all.
+    if (!isEnabled() && hasKeyboardFocus(false)) {
+        nn::a11y::moveFocusOn(*this);
+    }
+}
+
+bool NnFlatButton::keyPressed(const juce::KeyPress& inKey)
+{
+    // JUCE buttons only answer Return. Space would otherwise reach the main view's play shortcut or
+    // the host, instead of pressing the button that has the focus.
+    if (inKey == juce::KeyPress::spaceKey && isEnabled()) {
+        triggerClick();
+        return true;
+    }
+
+    return juce::Button::keyPressed(inKey);
+}
+
+std::unique_ptr<juce::AccessibilityHandler> NnFlatButton::createAccessibilityHandler()
+{
+    if (isToggleable()) {
+        return nn::a11y::makeToggleHandler(*this, juce::AccessibilityRole::button);
+    }
+
+    return juce::Button::createAccessibilityHandler();
 }
 
 void NnFlatButton::buttonStateChanged()

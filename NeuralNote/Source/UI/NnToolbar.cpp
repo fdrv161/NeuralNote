@@ -49,6 +49,11 @@ NnToolbar::NnToolbar(NeuralNoteAudioProcessor& inProcessor)
     mTempoEditor->setTooltip(NeuralNoteTooltips::export_tempo);
     mTempoEditor->setTitle("Export tempo");
 
+    // Leaving the field with no target would leave the plugin with no focus at all. The export
+    // button is enabled exactly when this field is.
+    mTempoEditor->onReturnKey = [this] { mExportButton.grabKeyboardFocus(); };
+    mTempoEditor->onEscapeKey = [this] { mExportButton.grabKeyboardFocus(); };
+
     // TextEditor only centres vertically when the line fits below its top indent, so the indent goes
     // and the editor takes the pill's full height.
     mTempoEditor->setIndents(mTempoEditor->getLeftIndent(), 0);

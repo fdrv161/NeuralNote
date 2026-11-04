@@ -38,6 +38,22 @@ void announce(juce::Component& inSource, const juce::String& inMessage);
  */
 std::unique_ptr<juce::AccessibilityHandler> makeReadoutHandler(juce::Component& inComponent,
                                                                std::function<juce::String()> inText);
+
+/**
+ * A handler for a toggleable button that carries its state in the toggle pattern alone.
+ *
+ * JUCE's own handler adds a read-only "On"/"Off" value next to it, and NVDA then says "read only" on
+ * every check box. Return this from createAccessibilityHandler() of a toggleable button.
+ */
+std::unique_ptr<juce::AccessibilityHandler> makeToggleHandler(juce::Button& inButton, juce::AccessibilityRole inRole);
+
+/**
+ * Hands the keyboard focus from inComponent to the next control, or to the window's first one.
+ *
+ * Call it just before a focused control goes away. JUCE otherwise leaves the plugin with no focus at
+ * all when a focused control is disabled: NVDA goes silent, and Tab and the shortcuts reach the host.
+ */
+void moveFocusOn(juce::Component& inComponent);
 } // namespace nn::a11y
 
 #endif // NnAccessibility_h

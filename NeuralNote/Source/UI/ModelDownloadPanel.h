@@ -75,6 +75,8 @@ private:
 
         void focusGained(FocusChangeType inCause) override;
 
+        std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override;
+
     private:
         ModelDownloadPanel& mOwner;
         const int mRow;

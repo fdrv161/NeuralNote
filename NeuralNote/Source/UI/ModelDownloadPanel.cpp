@@ -571,6 +571,11 @@ ModelDownloadPanel::RowItem::RowItem(ModelDownloadPanel& inOwner, int inRow)
     setWantsKeyboardFocus(true);
 }
 
+std::unique_ptr<juce::AccessibilityHandler> ModelDownloadPanel::RowItem::createAccessibilityHandler()
+{
+    return nn::a11y::makeToggleHandler(*this, juce::AccessibilityRole::toggleButton);
+}
+
 void ModelDownloadPanel::RowItem::paintButton(juce::Graphics& g, bool inIsHighlighted, bool inIsDown)
 {
     // The panel paints the row.

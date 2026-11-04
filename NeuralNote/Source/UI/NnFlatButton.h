@@ -66,6 +66,10 @@ public:
 
     void buttonStateChanged() override;
 
+    bool keyPressed(const juce::KeyPress& inKey) override;
+
+    std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override;
+
 private:
     IconBuilder mIconBuilder;
     IconBuilder mOverlayIconBuilder;

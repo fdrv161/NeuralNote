@@ -80,6 +80,13 @@ void StatusBar::setVerticalZoom(float inNorm)
     mZoomSlider.setValue(inNorm, juce::dontSendNotification);
 }
 
+void StatusBar::focusProgress()
+{
+    if (mProgress.isShowing()) {
+        mProgress.grabKeyboardFocus();
+    }
+}
+
 void StatusBar::updateEnablements()
 {
     mProgress.setVisible(mProcessor.isTranscriptionUnfinished());

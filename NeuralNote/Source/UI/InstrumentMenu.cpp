@@ -165,7 +165,9 @@ bool InstrumentMenu::keyPressed(const juce::KeyPress& inKey)
         return true;
     }
 
-    return false;
+    // Everything else stops here, or the main view's shortcuts would act behind the open list.
+    // Tab still moves the focus, and Alt combinations stay with the host.
+    return !inKey.isKeyCode(juce::KeyPress::tabKey) && !inKey.getModifiers().isAltDown();
 }
 
 void InstrumentMenu::visibilityChanged()
@@ -342,6 +344,11 @@ InstrumentMenu::RowItem::RowItem(RowList& inOwner, int inRow, const juce::String
     // The rows under it are clicked through the list, as before.
     setInterceptsMouseClicks(false, false);
     setMouseClickGrabsKeyboardFocus(false);
+}
+
+std::unique_ptr<juce::AccessibilityHandler> InstrumentMenu::RowItem::createAccessibilityHandler()
+{
+    return nn::a11y::makeToggleHandler(*this, juce::AccessibilityRole::toggleButton);
 }
 
 void InstrumentMenu::RowItem::paintButton(juce::Graphics& g, bool inIsHighlighted, bool inIsDown)

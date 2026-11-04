@@ -127,6 +127,8 @@ private:
 
         void focusGained(FocusChangeType inCause) override;
 
+        std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override;
+
     private:
         RowList& mOwner;
         const int mRow;

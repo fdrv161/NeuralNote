@@ -60,12 +60,82 @@ public:
 private:
     std::function<juce::String()> mText;
 };
+
+class ToggleHandler final : public juce::AccessibilityHandler
+{
+public:
+    ToggleHandler(juce::Button& inButton, juce::AccessibilityRole inRole)
+        : juce::AccessibilityHandler(inButton, inRole, getActions(inButton))
+        , mButton(inButton)
+    {
+    }
+
+    juce::AccessibleState getCurrentState() const override
+    {
+        const auto state = juce::AccessibilityHandler::getCurrentState().withCheckable();
+        return mButton.getToggleState() ? state.withChecked() : state;
+    }
+
+    juce::String getTitle() const override
+    {
+        const juce::String title = juce::AccessibilityHandler::getTitle();
+        return title.isNotEmpty() ? title : mButton.getButtonText();
+    }
+
+    juce::String getHelp() const override { return mButton.getTooltip(); }
+
+private:
+    static juce::AccessibilityActions getActions(juce::Button& inButton)
+    {
+        return juce::AccessibilityActions()
+            .addAction(juce::AccessibilityActionType::press, [&inButton] { inButton.triggerClick(); })
+            .addAction(juce::AccessibilityActionType::toggle, [&inButton] {
+                if (!inButton.isEnabled()) {
+                    return;
+                }
+
+                // A list row keeps its tick in the data behind it, so only its click can change it.
+                if (inButton.getClickingTogglesState()) {
+                    inButton.setToggleState(!inButton.getToggleState(), juce::sendNotification);
+                } else {
+                    inButton.triggerClick();
+                }
+            });
+    }
+
+    juce::Button& mButton;
+};
 } // namespace
 
 std::unique_ptr<juce::AccessibilityHandler> nn::a11y::makeReadoutHandler(juce::Component& inComponent,
                                                                          std::function<juce::String()> inText)
 {
     return std::make_unique<ReadoutHandler>(inComponent, std::move(inText));
+}
+
+std::unique_ptr<juce::AccessibilityHandler> nn::a11y::makeToggleHandler(juce::Button& inButton,
+                                                                        juce::AccessibilityRole inRole)
+{
+    return std::make_unique<ToggleHandler>(inButton, inRole);
+}
+
+void nn::a11y::moveFocusOn(juce::Component& inComponent)
+{
+    auto traverser = inComponent.createKeyboardFocusTraverser();
+
+    if (traverser == nullptr) {
+        return;
+    }
+
+    juce::Component* target = traverser->getNextComponent(&inComponent);
+
+    if (target == nullptr || target == &inComponent || !target->isEnabled() || !target->isShowing()) {
+        target = traverser->getDefaultComponent(inComponent.getTopLevelComponent());
+    }
+
+    if (target != nullptr && target != &inComponent) {
+        target->grabKeyboardFocus();
+    }
 }
 
 void nn::a11y::notifyToggleStateChanged(juce::Component& inComponent)
