@@ -27,6 +27,14 @@ Keyboard::Keyboard()
     // turned off: setScrollButtonsVisible(false) also pins the view to the bottom of the range,
     // which would take the scrolling with it.
     setScrollButtonWidth(1);
+
+    // Those arrows are real buttons with no name, so once zoomed in they became empty Tab stops.
+    // The keyboard is only a picture of the piano roll's rows: nothing here is for a screen reader.
+    setAccessible(false);
+
+    for (auto* child: getChildren()) {
+        child->setWantsKeyboardFocus(false);
+    }
 }
 
 void Keyboard::setDisplayedRange(const PianoRollRange::DisplayRange& inRange)

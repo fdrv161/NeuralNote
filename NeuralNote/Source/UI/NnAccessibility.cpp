@@ -140,6 +140,22 @@ void nn::a11y::moveFocusOn(juce::Component& inComponent)
         target = traverser->getDefaultComponent(parent);
     }
 
+    // A scroll area is a Tab stop too, but a bare group; the control after it is more use.
+    const auto is_group = [](juce::Component* inTarget) {
+        const auto* handler = inTarget->getAccessibilityHandler();
+        return handler != nullptr && handler->getRole() == juce::AccessibilityRole::group;
+    };
+
+    juce::Component* after_groups = target;
+
+    for (int i = 0; i < 8 && is_usable(after_groups) && is_group(after_groups); i++) {
+        after_groups = traverser->getNextComponent(after_groups);
+    }
+
+    if (is_usable(after_groups)) {
+        target = after_groups;
+    }
+
     if (is_usable(target)) {
         target->grabKeyboardFocus();
     }

@@ -241,6 +241,12 @@ bool NeuralNoteMainView::keyPressed(const KeyPress& key)
         return true;
     }
 
+    // Controls that use the arrows have taken them by now. Left to go on, they would reach the
+    // host and move the focus out of the plugin.
+    if (key == KeyPress::leftKey || key == KeyPress::rightKey || key == KeyPress::upKey || key == KeyPress::downKey) {
+        return true;
+    }
+
     return false;
 }
 

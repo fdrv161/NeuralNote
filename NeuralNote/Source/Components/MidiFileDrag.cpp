@@ -4,6 +4,7 @@
 
 #include "MidiFileDrag.h"
 
+#include "NnAccessibility.h"
 #include "NnFonts.h"
 #include "NnIcons.h"
 #include "NnLogger.h"
@@ -26,6 +27,9 @@ MidiFileDrag::MidiFileDrag(NeuralNoteAudioProcessor* inProcessor)
 
     setTooltip("Drag the transcribed MIDI into your DAW");
     setTitle("Drag MIDI out");
+
+    // Dragging needs a mouse, so Return would otherwise do nothing at all.
+    onClick = [this] { nn::a11y::announce(*this, "Drag needs a mouse. Use Export MIDI out"); };
 }
 
 MidiFileDrag::~MidiFileDrag()
