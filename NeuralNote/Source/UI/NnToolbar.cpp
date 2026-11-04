@@ -6,6 +6,7 @@
 
 #include "NeuralNoteTooltips.h"
 #include "NNFileUtils.h"
+#include "NnAccessibility.h"
 #include "NnFonts.h"
 #include "NnGlobalSettings.h"
 #include "NnIcons.h"
@@ -184,6 +185,7 @@ void NnToolbar::_exportMidiFile()
             }
 
             NnGlobalSettings::setMidiExportDirectory(file.getParentDirectory());
+            nn::a11y::announceLater(*this, "MIDI exported: " + file.getFileName());
         });
 }
 
@@ -195,13 +197,19 @@ void NnToolbar::_clearOneStep()
             mProcessor.getTranscriptionManager()->discardTranscription();
             break;
 
+        // The main view says this one has stopped.
         case Paused:
+            mProcessor.clearTranscription();
+            break;
+
         case PopulatedAudioAndMidiRegions:
             mProcessor.clearTranscription();
+            nn::a11y::announce(*this, "Transcription cleared");
             break;
 
         case AudioLoaded:
             mProcessor.clear();
+            nn::a11y::announce(*this, "Audio cleared");
             break;
 
         // The button is disabled in both.

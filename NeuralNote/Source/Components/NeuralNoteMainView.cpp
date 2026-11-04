@@ -201,7 +201,14 @@ bool NeuralNoteMainView::keyPressed(const KeyPress& key)
     }
 
     if (key == KeyPress(KeyPress::backspaceKey, ModifierKeys::shiftModifier, 0)) {
-        mVisualizationPanel.getToolbar().getClearButton().triggerClick();
+        auto& clear_button = mVisualizationPanel.getToolbar().getClearButton();
+
+        if (clear_button.isEnabled()) {
+            clear_button.triggerClick();
+        } else {
+            nn::a11y::announce(*this, "Nothing to clear");
+        }
+
         return true;
     }
 
@@ -215,22 +222,22 @@ bool NeuralNoteMainView::keyPressed(const KeyPress& key)
     }
 
     if (key == KeyPress('r', juce::ModifierKeys::noModifiers, 0)) {
-        mTopBar.getRecordButton().triggerClick();
+        _pressShortcut(mTopBar.getRecordButton(), "Record", "Clear the audio to record");
         return true;
     }
 
     if (key == KeyPress('m', juce::ModifierKeys::noModifiers, 0)) {
-        mTopBar.getMuteButton().triggerClick();
+        _pressShortcut(mTopBar.getMuteButton(), "Mute input", "Mute input is not available now");
         return true;
     }
 
     if (key == KeyPress('c', juce::ModifierKeys::noModifiers, 0)) {
-        mTopBar.getFollowButton().triggerClick();
+        _pressShortcut(mTopBar.getFollowButton(), "Follow playhead", "No audio to play");
         return true;
     }
 
     if (key == KeyPress('l', juce::ModifierKeys::noModifiers, 0)) {
-        mTopBar.getLoopButton().triggerClick();
+        _pressShortcut(mTopBar.getLoopButton(), "Loop", "No audio to play");
         return true;
     }
 
@@ -240,6 +247,23 @@ bool NeuralNoteMainView::keyPressed(const KeyPress& key)
 std::unique_ptr<AccessibilityHandler> NeuralNoteMainView::createAccessibilityHandler()
 {
     return std::make_unique<AccessibilityHandler>(*this, AccessibilityRole::group);
+}
+
+void NeuralNoteMainView::_pressShortcut(NnFlatButton& inButton, const String& inName, const String& inWhyUnavailable)
+{
+    if (!inButton.isEnabled()) {
+        nn::a11y::announce(*this, inWhyUnavailable);
+        return;
+    }
+
+    // The click arrives a moment later, so the new state is worked out here. With the focus on the
+    // button NVDA reports the change itself.
+    const bool will_be_on = !inButton.getToggleState();
+    inButton.triggerClick();
+
+    if (!inButton.hasKeyboardFocus(false)) {
+        nn::a11y::announce(*this, inName + (will_be_on ? " on" : " off"));
+    }
 }
 
 void NeuralNoteMainView::_seekBy(double inSeconds)

@@ -125,7 +125,21 @@ void StatusBar::paint(juce::Graphics& g)
 
 std::unique_ptr<juce::AccessibilityHandler> StatusBar::createAccessibilityHandler()
 {
-    return nn::a11y::makeReadoutHandler(*this, [this] { return "Status: " + _getSegments().joinIntoString(", "); });
+    return nn::a11y::makeReadoutHandler(*this, [this] {
+        // The file name and the instruments are drawn elsewhere in the window; a screen reader user
+        // gets them here in one stop instead of walking the whole mixer.
+        juce::StringArray parts;
+        parts.add(mProcessor.getSourceAudioManager()->getDroppedFilename());
+
+        for (const auto& entry: mProcessor.getInstrumentMixer()->getEntries()) {
+            parts.add(entry.name);
+        }
+
+        parts.addArray(_getSegments());
+        parts.removeEmptyStrings();
+
+        return "Status: " + parts.joinIntoString(", ");
+    });
 }
 
 juce::StringArray StatusBar::_getSegments() const

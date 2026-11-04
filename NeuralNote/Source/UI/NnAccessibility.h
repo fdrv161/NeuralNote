@@ -32,6 +32,12 @@ void notifyToggleStateChanged(juce::Component& inComponent);
 void announce(juce::Component& inSource, const juce::String& inMessage);
 
 /**
+ * announce() after a short delay, for the result of a native dialog: a screen reader drops
+ * notifications until the focus is back in the plugin's window.
+ */
+void announceLater(juce::Component& inSource, const juce::String& inMessage);
+
+/**
  * A handler for a painted read-out (status line, time display): static text whose name is the text
  * it currently shows, built each time the screen reader asks. Return it from the component's
  * createAccessibilityHandler(), and give the component keyboard focus so it is a Tab stop.
@@ -48,7 +54,7 @@ std::unique_ptr<juce::AccessibilityHandler> makeReadoutHandler(juce::Component& 
 std::unique_ptr<juce::AccessibilityHandler> makeToggleHandler(juce::Button& inButton, juce::AccessibilityRole inRole);
 
 /**
- * Hands the keyboard focus from inComponent to the next control, or to the window's first one.
+ * Hands the keyboard focus from inComponent to the next control, or to the nearest one still working.
  *
  * Call it just before a focused control goes away. JUCE otherwise leaves the plugin with no focus at
  * all when a focused control is disabled: NVDA goes silent, and Tab and the shortcuts reach the host.

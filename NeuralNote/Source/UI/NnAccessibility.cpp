@@ -127,13 +127,20 @@ void nn::a11y::moveFocusOn(juce::Component& inComponent)
         return;
     }
 
+    const auto is_usable = [&inComponent](const juce::Component* inTarget) {
+        return inTarget != nullptr && inTarget != &inComponent && inTarget->isEnabled() && inTarget->isShowing();
+    };
+
     juce::Component* target = traverser->getNextComponent(&inComponent);
 
-    if (target == nullptr || target == &inComponent || !target->isEnabled() || !target->isShowing()) {
-        target = traverser->getDefaultComponent(inComponent.getTopLevelComponent());
+    // Widening from the closest parent finds a working control near this one. The main view itself
+    // takes the focus too, but as a bare group it tells the user nothing, so it is the last resort.
+    for (auto* parent = inComponent.getParentComponent(); parent != nullptr && !is_usable(target);
+         parent = parent->getParentComponent()) {
+        target = traverser->getDefaultComponent(parent);
     }
 
-    if (target != nullptr && target != &inComponent) {
+    if (is_usable(target)) {
         target->grabKeyboardFocus();
     }
 }
@@ -162,6 +169,15 @@ void nn::a11y::notifyToggleStateChanged(juce::Component& inComponent)
 #else
     juce::ignoreUnused(inComponent);
 #endif
+}
+
+void nn::a11y::announceLater(juce::Component& inSource, const juce::String& inMessage)
+{
+    juce::Timer::callAfterDelay(500, [source = juce::Component::SafePointer<juce::Component>(&inSource), inMessage] {
+        if (source != nullptr) {
+            announce(*source, inMessage);
+        }
+    });
 }
 
 void nn::a11y::announce(juce::Component& inSource, const juce::String& inMessage)

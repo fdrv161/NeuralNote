@@ -60,6 +60,12 @@ private:
     /** Shows or hides the instrument picker, and lights the "+" to match. */
     void _setInstrumentMenuOpen(bool inIsOpen);
 
+    /**
+     * Presses a toggle from its shortcut and speaks the result, which NVDA does not report for a
+     * control without the focus. A disabled button says why instead.
+     */
+    void _pressShortcut(NnFlatButton& inButton, const String& inName, const String& inWhyUnavailable);
+
     /** Moves the playhead by inSeconds, stopping at either end, and speaks where it landed. */
     void _seekBy(double inSeconds);
 

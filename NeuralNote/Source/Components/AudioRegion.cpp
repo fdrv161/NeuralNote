@@ -6,6 +6,7 @@
 
 #include "CombinedAudioMidiRegion.h"
 #include "NeuralNoteTooltips.h"
+#include "NnAccessibility.h"
 #include "NnFonts.h"
 #include "NnGlobalSettings.h"
 #include "NnIcons.h"
@@ -218,6 +219,7 @@ void AudioRegion::_openFileChooser()
 
                                   if (parent && parent->loadAudioFile(fc.getResult().getFullPathName())) {
                                       NnGlobalSettings::setAudioLoadDirectory(fc.getResult().getParentDirectory());
+                                      nn::a11y::announceLater(*this, "Loaded " + fc.getResult().getFileName());
                                   }
                               });
 }

@@ -4,6 +4,7 @@
 
 #include "UpdateCheck.h"
 
+#include "NnAccessibility.h"
 #include "NnFonts.h"
 #include "NnIcons.h"
 #include "NnLook.h"
@@ -192,6 +193,9 @@ void UpdateCheck::_showNewVersionAvailableNotification()
     resized();
 
     startTimerHz(5);
+
+    // It hides by itself after a few seconds, so it is said rather than left to be found.
+    nn::a11y::announce(*this, "A new version of NeuralNote is available");
 }
 
 void UpdateCheck::_showOnLatestVersionNotification()
@@ -204,6 +208,8 @@ void UpdateCheck::_showOnLatestVersionNotification()
     resized();
 
     startTimerHz(5);
+
+    nn::a11y::announce(*this, "NeuralNote is up to date");
 }
 
 void UpdateCheck::_hideNotification()
