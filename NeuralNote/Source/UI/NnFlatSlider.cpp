@@ -34,6 +34,39 @@ NnFlatSlider::~NnFlatSlider()
     setLookAndFeel(nullptr);
 }
 
+bool NnFlatSlider::keyPressed(const juce::KeyPress& inKey)
+{
+    // Ctrl+arrows belong to the main view, which moves the playhead.
+    if (inKey.getModifiers().isAnyModifierKeyDown()) {
+        return juce::Slider::keyPressed(inKey);
+    }
+
+    const double step = mKeyStep > 0.0 ? mKeyStep : (getMaximum() - getMinimum()) / 100.0;
+    double new_value = getValue();
+
+    if (inKey == juce::KeyPress::rightKey || inKey == juce::KeyPress::upKey) {
+        new_value += step;
+    } else if (inKey == juce::KeyPress::leftKey || inKey == juce::KeyPress::downKey) {
+        new_value -= step;
+    } else if (inKey == juce::KeyPress::pageUpKey) {
+        new_value += 10.0 * step;
+    } else if (inKey == juce::KeyPress::pageDownKey) {
+        new_value -= 10.0 * step;
+    } else if (inKey == juce::KeyPress::homeKey) {
+        new_value = getMinimum();
+    } else if (inKey == juce::KeyPress::endKey) {
+        new_value = getMaximum();
+    } else {
+        return juce::Slider::keyPressed(inKey);
+    }
+
+    // Wraps the change in a gesture, so a host records it as automation like a drag.
+    const ScopedDragNotification drag(*this);
+    setValue(juce::jlimit(getMinimum(), getMaximum(), new_value), juce::sendNotificationSync);
+
+    return true;
+}
+
 void NnFlatSlider::paint(juce::Graphics& g)
 {
     const auto bounds = getLocalBounds().toFloat();

@@ -77,11 +77,30 @@ inline std::unique_ptr<RangedAudioParameter> getRangedAudioParamForID(ParamIdEnu
         case MuteId:
             return std::make_unique<AudioParameterBool>(toJuceParameterID(id), toName(id), false);
         case MixId:
+            // The texts are what screen readers and the host's parameter list show. Without them a
+            // value reads as a bare number with no unit.
             return std::make_unique<AudioParameterFloat>(
-                toJuceParameterID(id), toName(id), NormalisableRange<float>(0.0f, 1.0f, 0.001f), 0.5f);
+                toJuceParameterID(id),
+                toName(id),
+                NormalisableRange<float>(0.0f, 1.0f, 0.001f),
+                0.5f,
+                AudioParameterFloatAttributes()
+                    .withStringFromValueFunction(
+                        [](float inValue, int) { return String(roundToInt(inValue * 100.0f)) + "% MIDI"; })
+                    .withValueFromStringFunction([](const String& inText) { return inText.getFloatValue() / 100.0f; }));
         case MasterGainId:
             return std::make_unique<AudioParameterFloat>(
-                toJuceParameterID(id), toName(id), NormalisableRange<float>(MIN_INF_GAIN_DB, MAX_GAIN_DB, 0.1f), 0.0f);
+                toJuceParameterID(id),
+                toName(id),
+                NormalisableRange<float>(MIN_INF_GAIN_DB, MAX_GAIN_DB, 0.1f),
+                0.0f,
+                AudioParameterFloatAttributes()
+                    .withStringFromValueFunction([](float inValue, int) {
+                        return inValue <= MIN_INF_GAIN_DB ? String("-inf dB") : String(inValue, 1) + " dB";
+                    })
+                    .withValueFromStringFunction([](const String& inText) {
+                        return inText.containsIgnoreCase("inf") ? MIN_INF_GAIN_DB : inText.getFloatValue();
+                    }));
         case TotalNumParams:
         default:
             jassertfalse;

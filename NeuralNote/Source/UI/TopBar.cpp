@@ -188,6 +188,7 @@ TopBar::TopBar(NeuralNoteAudioProcessor& inProcessor)
     mMasterGainSlider.setColour(NnFlatSlider::fillColourId, nn::colours::volumeFill);
     mMasterGainSlider.setTooltip("Output level");
     mMasterGainSlider.setTitle("Output volume");
+    mMasterGainSlider.setKeyStep(0.5);
     // The pill paints the dB readout, so it has to repaint with the fader.
     mMasterGainSlider.onValueChange = [this] { repaint(); };
     mMasterGainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(

@@ -50,6 +50,7 @@ InstrumentStrip::InstrumentStrip(InstrumentMixer& inMixer, int inProgram)
 
     mFader.setRange(MIN_INF_GAIN_DB, MAX_GAIN_DB, 0.1);
     mFader.setDoubleClickReturnValue(true, 0.0);
+    mFader.setKeyStep(0.5);
     mFader.setTooltip("Level for this instrument");
     // Only read out by screen readers: the fader has no text box.
     mFader.setTextValueSuffix(" dB");

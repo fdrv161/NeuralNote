@@ -36,6 +36,15 @@ public:
 
     void paint(juce::Graphics& g) override;
 
+    /**
+     * Arrows move by one step, Page Up and Page Down by ten, Home and End go to the ends.
+     * JUCE's own step is the value's precision, which on a fine range takes hundreds of presses.
+     */
+    bool keyPressed(const juce::KeyPress& inKey) override;
+
+    /** The arrow key step, in the slider's units. By default a hundredth of the range. */
+    void setKeyStep(double inStep) { mKeyStep = inStep; }
+
 private:
     /** Only overrides the thumb radius the slider's drag region is derived from. */
     class ThumbLayout : public juce::LookAndFeel_V4
@@ -54,6 +63,8 @@ private:
 
     // One instance shared by every fader, released with the last of them.
     juce::SharedResourcePointer<ThumbLayout> mThumbLayout;
+
+    double mKeyStep = 0.0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(NnFlatSlider)
 };

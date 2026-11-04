@@ -60,6 +60,9 @@ StatusBar::StatusBar(NeuralNoteAudioProcessor& inProcessor)
     mZoomSlider.setColour(NnFlatSlider::thumbColourId, nn::colours::zoomThumb);
     mZoomSlider.setTooltip("Piano roll vertical zoom");
     mZoomSlider.setTitle("Vertical zoom");
+    mZoomSlider.textFromValueFunction = [](double inValue) {
+        return juce::String(juce::roundToInt(inValue * 100.0)) + "%";
+    };
     mZoomSlider.onValueChange = [this] {
         if (onVerticalZoomChange != nullptr) {
             onVerticalZoomChange(static_cast<float>(mZoomSlider.getValue()));
